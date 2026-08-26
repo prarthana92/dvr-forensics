@@ -17,7 +17,6 @@ def calculate_hash(file_path, algorithm):
 
 def identify_evidence_type(file_path):
     extension = Path(file_path).suffix.lower()
-
     video_extensions = [".mp4", ".avi", ".mkv", ".mov", ".dav", ".264", ".265"]
     image_extensions = [".jpg", ".jpeg", ".png", ".bmp"]
     archive_extensions = [".zip", ".rar", ".7z"]
