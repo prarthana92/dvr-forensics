@@ -1,9 +1,9 @@
-
 # DVR/NVR Forensic Analysis Tool
 
 A multi-vendor DVR/NVR forensic analysis tool for standardized acquisition, recovery, and analysis of surveillance evidence. Starting with Hikvision and Dahua support.
 
 ## Project Structure
+
 DVR/
 ├── acquisition/ # disk imaging, hashing (evidence integrity)
 ├── parsers/ # vendor-specific file system/format parsers
@@ -23,7 +23,7 @@ git config --global user.email "your-github-email@example.com"
 
 5. **Clone this repo** (don't use `git init`, the project already exists):
 
-git clone https://github.com/YOUR_USERNAME/dvr-forensics.git
+git clone https://github.com/prarthana92/dvr-forensics.git
 
 
 ## How We Work Together
@@ -51,4 +51,3 @@ git push -u origin your-feature-name
 | Dahua parser | TBD | Not started |
 | Database (MySQL) | TBD | Not started |
 | Reporting | TBD | Not started |
-
