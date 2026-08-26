@@ -1,13 +1,16 @@
-# DVR/NVR Forensic Analysis Tool
+# TraceX
+
+**Unified forensic recovery and analysis for multi-vendor DVR/NVR surveillance evidence.**
 
 A multi-vendor DVR/NVR forensic analysis tool for standardized acquisition, recovery, and analysis of surveillance evidence. Starting with Hikvision and Dahua support.
 
 ## Project Structure
 
 DVR/
-├── acquisition/ # disk imaging, hashing (evidence integrity)
+├── acquisition/ # disk imaging, hashing, evidence backup (evidence integrity)
 ├── parsers/ # vendor-specific file system/format parsers
 ├── db/ # MySQL schema + connection layer
+├── frontend/ # Flask web dashboard (login, evidence view, verification)
 ├── data/ # test files — never commit real evidence here
 
 
@@ -16,14 +19,19 @@ DVR/
 1. **Install Python**: Go to python.org/downloads, download, and during install make sure to check "Add python.exe to PATH".
 2. **Install Git**: Download from git-scm.com if you don't have it.
 3. **Install VS Code Python extension**: Open VS Code → Extensions icon → search "Python" → install the Microsoft one.
-4. **Set your Git identity** (in a terminal):
+4. **Install MySQL**: Go to dev.mysql.com/downloads/installer, choose "Developer Default", remember your root password.
+5. **Set your Git identity** (in a terminal):
 
 git config --global user.name "Your Name"
 git config --global user.email "your-github-email@example.com"
 
-5. **Clone this repo** (don't use `git init`, the project already exists):
+6. **Clone this repo** (don't use `git init`, the project already exists):
 
-git clone https://github.com/prarthana92/dvr-forensics.git
+git clone https://github.com/prarthana92/tracex.git
+
+7. **Install Python dependencies**:
+
+pip install flask mysql-connector-python
 
 
 ## How We Work Together
@@ -46,8 +54,12 @@ git push -u origin your-feature-name
 
 | Module | Owner | Status |
 |---|---|---|
-| acquisition (hashing/imaging) | Prarthana | In progress |
+| Acquisition (hashing, evidence backup) | Prarthana | Working prototype |
+| Database (MySQL schema, logging) | Prarthana | Working prototype |
+| Frontend (login, dashboard, evidence, verification) | Prarthana | Working prototype |
 | Hikvision parser | TBD | Not started |
-| Dahua parser | TBD | Not started |
-| Database (MySQL) | TBD | Not started |
-| Reporting | TBD | Not started |
+| Dahua parser + deleted-clip recovery | TBD | Not started |
+| ML analytics (face/object/motion detection) | TBD | Not started |
+
+## Running the app
+
