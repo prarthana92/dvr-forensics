@@ -9,7 +9,7 @@
         <a class="navbar-brand" href="/">TraceX</a>
         <div class="navbar-nav me-auto">
             <a class="nav-link active" href="/">Dashboard</a>
-            <a class="nav-link" href="/evidence">Evidence</a>
+            <a class="nav-link" href="/upload">Upload</a>
         </div>
         <a class="nav-link" href="/logout">Logout</a>
     </nav>
@@ -17,6 +17,33 @@
     <div class="container mt-5">
         <h1>TraceX</h1>
         <p class="text-muted">Unified forensic recovery and analysis for multi-vendor DVR/NVR surveillance evidence.</p>
+
+        <div class="row mt-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-secondary bg-opacity-25 text-center p-3">
+                    <div class="fs-2">{{ stats.total_evidence }}</div>
+                    <div class="text-muted">Total Evidence</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success bg-opacity-25 text-center p-3">
+                    <div class="fs-2">{{ stats.verified_count }}</div>
+                    <div class="text-muted">Verified</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger bg-opacity-25 text-center p-3">
+                    <div class="fs-2">{{ stats.alert_count }}</div>
+                    <div class="text-muted">Alerts (Mismatches)</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info bg-opacity-25 text-center p-3">
+                    <div class="fs-5 mt-1">{{ stats.backup_status }}</div>
+                    <div class="text-muted">Original Backup</div>
+                </div>
+            </div>
+        </div>
 
         <table class="table table-dark table-striped mt-4">
             <thead>

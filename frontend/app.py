@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from werkzeug.utils import secure_filename
 import mysql.connector
 import shutil
 import hashlib
@@ -10,6 +11,8 @@ app.secret_key = "tracex_secret_key_change_this"
 
 VALID_USERNAME = "investigator"
 VALID_PASSWORD = "tracex123"
+
+UPLOAD_FOLDER = "../data/uploads"
 
 def login_required(f):
     @wraps(f)
@@ -34,6 +37,31 @@ def get_hash_logs():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+def get_dashboard_stats():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT COUNT(*) AS total FROM hash_log")
+    total_evidence = cursor.fetchone()["total"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM verification_log WHERE result = 'verified'")
+    verified_count = cursor.fetchone()["c"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM verification_log WHERE result = 'mismatch'")
+    alert_count = cursor.fetchone()["c"]
+
+    conn.close()
+
+    backup_folder = "../data/original_backup"
+    backup_exists = os.path.isdir(backup_folder) and len(os.listdir(backup_folder)) > 0
+
+    return {
+        "total_evidence": total_evidence,
+        "verified_count": verified_count,
+        "alert_count": alert_count,
+        "backup_status": "Active" if backup_exists else "Not yet"
+    }
 
 def compute_sha256(filepath):
     sha256 = hashlib.sha256()
@@ -65,8 +93,9 @@ def logout():
 @login_required
 def dashboard():
     logs = get_hash_logs()
+    stats = get_dashboard_stats()
     show_popup = not session.get("asked_copy", False)
-    return render_template("dashboard.html", logs=logs, show_popup=show_popup)
+    return render_template("dashboard.html", logs=logs, stats=stats, show_popup=show_popup)
 
 @app.route("/evidence")
 @login_required
@@ -98,22 +127,65 @@ def verify(log_id):
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM hash_log WHERE id = %s", (log_id,))
     record = cursor.fetchone()
-    conn.close()
 
     if not record:
+        conn.close()
         flash("Record not found.", "danger")
         return redirect(url_for("evidence"))
 
     try:
         current_hash = compute_sha256(record["filename"])
         if current_hash == record["sha256_hash"]:
+            result = "verified"
             flash(f"VERIFIED — {record['filename']} matches its original hash. No tampering detected.", "success")
         else:
+            result = "mismatch"
             flash(f"MISMATCH — {record['filename']} does NOT match its original hash. This file may have been altered.", "danger")
     except FileNotFoundError:
+        result = "not_found"
         flash(f"NOT FOUND — {record['filename']} could not be located at its recorded path.", "warning")
 
+    insert_cursor = conn.cursor()
+    insert_cursor.execute(
+        "INSERT INTO verification_log (filename, result) VALUES (%s, %s)",
+        (record["filename"], result)
+    )
+    conn.commit()
+    conn.close()
+
     return redirect(url_for("evidence"))
+
+@app.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload():
+    if request.method == "POST":
+        files = request.files.getlist("files")
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+        uploaded_count = 0
+        for file in files:
+            if file and file.filename:
+                filename = secure_filename(os.path.basename(file.filename))
+                if filename == "":
+                    continue
+                save_path = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(save_path)
+
+                file_hash = compute_sha256(save_path)
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO hash_log (filename, sha256_hash) VALUES (%s, %s)",
+                    (save_path, file_hash)
+                )
+                conn.commit()
+                conn.close()
+                uploaded_count += 1
+
+        flash(f"{uploaded_count} file(s) uploaded and automatically hashed.", "success")
+        return redirect(url_for("evidence"))
+
+    return render_template("upload.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
