@@ -1,97 +1,90 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>TraceX</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cyborg/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand navbar-dark bg-dark px-4">
-        <a class="navbar-brand" href="/">TraceX</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link active" href="/">Dashboard</a>
-            <a class="nav-link" href="/upload">Upload</a>
-        </div>
-        <a class="nav-link" href="/logout">Logout</a>
-    </nav>
+{% extends "base.html" %}
+{% block title %}TraceX — Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
-    <div class="container mt-5">
-        <h1>TraceX</h1>
-        <p class="text-muted">Unified forensic recovery and analysis for multi-vendor DVR/NVR surveillance evidence.</p>
-
-        <div class="row mt-4">
-            <div class="col-md-3 mb-3">
-                <div class="card bg-secondary bg-opacity-25 text-center p-3">
-                    <div class="fs-2">{{ stats.total_evidence }}</div>
-                    <div class="text-muted">Total Evidence</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-success bg-opacity-25 text-center p-3">
-                    <div class="fs-2">{{ stats.verified_count }}</div>
-                    <div class="text-muted">Verified</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-danger bg-opacity-25 text-center p-3">
-                    <div class="fs-2">{{ stats.alert_count }}</div>
-                    <div class="text-muted">Alerts (Mismatches)</div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-info bg-opacity-25 text-center p-3">
-                    <div class="fs-5 mt-1">{{ stats.backup_status }}</div>
-                    <div class="text-muted">Original Backup</div>
-                </div>
-            </div>
-        </div>
-
-        <table class="table table-dark table-striped mt-4">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Filename</th>
-                    <th>SHA-256 Hash</th>
-                    <th>Logged At</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in logs %}
-                <tr>
-                    <td>{{ log.id }}</td>
-                    <td>{{ log.filename }}</td>
-                    <td style="font-size: 0.8em;">{{ log.sha256_hash }}</td>
-                    <td>{{ log.logged_at }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% block content %}
+<div class="mb-3">
+    <h6 class="text-muted">Supported Vendors</h6>
+    <div class="d-flex flex-wrap gap-2">
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Hikvision</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Dahua</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>CP Plus</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Honeywell</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>TP-Link</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Godrej</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Uniview</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Matrix</span>
     </div>
+</div>
 
-    <div class="modal fade" id="copyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-light border border-secondary">
-                <div class="modal-header">
-                    <h5 class="modal-title">Evidence Handling Check</h5>
-                </div>
-                <div class="modal-body">
-                    <p>Have you already made a backup copy of this footage/data elsewhere?</p>
-                </div>
-                <form method="POST" action="/confirm_copy">
-                    <div class="modal-footer">
-                        <button type="submit" name="already_copied" value="yes" class="btn btn-success">Yes, already copied</button>
-                        <button type="submit" name="already_copied" value="no" class="btn btn-warning">No, copy it now</button>
-                    </div>
-                </form>
-            </div>
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card stat-purple">
+            <div class="stat-number">{{ stats.total_evidence }}</div>
+            <div class="stat-label">Total Evidence</div>
         </div>
     </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card stat-olive">
+            <div class="stat-number">{{ stats.verified_count }}</div>
+            <div class="stat-label">Verified</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card stat-red">
+            <div class="stat-number">{{ stats.alert_count }}</div>
+            <div class="stat-label">Alerts</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card stat-teal">
+            <div class="stat-number-small">{{ stats.backup_status }}</div>
+            <div class="stat-label">Original Backup</div>
+        </div>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% if show_popup %}
-    <script>
-        var copyModal = new bootstrap.Modal(document.getElementById('copyModal'));
-        copyModal.show();
-    </script>
-    {% endif %}
-</body>
-</html>
+<h5 class="mt-4">Evidence Log</h5>
+<table class="table table-dark table-striped table-sm">
+    <thead>
+        <tr><th>Filename</th><th>SHA-256</th><th>Logged At</th></tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td style="font-size:0.85em;">{{ log.filename }}</td>
+            <td style="font-size:0.75em;">{{ log.sha256_hash[:20] }}...</td>
+            <td style="font-size:0.85em;">{{ log.logged_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="modal fade" id="copyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-secondary">
+            <div class="modal-header">
+                <h5 class="modal-title">Evidence Handling Check</h5>
+            </div>
+            <div class="modal-body">
+                <p>Have you already made a backup copy of this footage/data elsewhere?</p>
+            </div>
+            <form method="POST" action="/confirm_copy">
+                <div class="modal-footer">
+                    <button type="submit" name="already_copied" value="yes" class="btn btn-success">Yes, already copied</button>
+                    <button type="submit" name="already_copied" value="no" class="btn btn-warning">No, copy it now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if show_popup %}
+<script>
+    var copyModal = new bootstrap.Modal(document.getElementById('copyModal'));
+    copyModal.show();
+</script>
+{% endif %}
+{% endblock %}

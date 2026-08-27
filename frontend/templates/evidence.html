@@ -1,48 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>TraceX — Evidence</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cyborg/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand navbar-dark bg-dark px-4">
-        <a class="navbar-brand" href="/">TraceX</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link" href="/upload">Upload</a>
-        </div>
-        <a class="nav-link" href="/logout">Logout</a>
-    </nav>
+{% extends "base.html" %}
+{% block title %}TraceX — Evidence{% endblock %}
+{% block page_title %}Evidence{% endblock %}
 
-    <div class="container mt-5">
-        <h1>Evidence</h1>
-        <p class="text-muted">All processed and hash-verified evidence files.</p>
+{% block content %}
+<input type="text" id="searchBox" class="form-control mb-3" placeholder="Search by filename...">
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="row mt-4">
-            {% for log in logs %}
-            <div class="col-md-6 mb-3">
-                <div class="card bg-secondary bg-opacity-25">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ log.filename }}</h5>
-                        <p class="card-text" style="font-size: 0.8em; word-break: break-all;">
-                            SHA-256: {{ log.sha256_hash }}
-                        </p>
-                        <span class="badge bg-success">Logged</span>
-                        <small class="text-muted d-block mt-2">Logged: {{ log.logged_at }}</small>
-                        <a href="/verify/{{ log.id }}" class="btn btn-sm btn-outline-info mt-3">Verify Integrity</a>
-                    </div>
-                </div>
+<div class="row" id="evidenceGrid">
+    {% for log in logs %}
+    <div class="col-md-6 mb-3 evidence-card" data-filename="{{ log.filename|lower }}">
+        <div class="card evidence-item-card">
+            <div class="card-body">
+                <h6 class="card-title">{{ log.filename }}</h6>
+                <p class="card-text" style="font-size: 0.75em; word-break: break-all;">SHA-256: {{ log.sha256_hash }}</p>
+                <span class="badge bg-success">Logged</span>
+                <small class="text-muted d-block mt-2">Logged: {{ log.logged_at }}</small>
+                <a href="/verify/{{ log.id }}" class="btn btn-sm btn-outline-info mt-3">Verify Integrity</a>
             </div>
-            {% endfor %}
         </div>
     </div>
-</body>
-</html>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchBox').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('.evidence-card').forEach(card => {
+        const filename = card.getAttribute('data-filename');
+        card.style.display = filename.includes(query) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

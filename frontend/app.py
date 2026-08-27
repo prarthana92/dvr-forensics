@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.utils import secure_filename
 import mysql.connector
 import shutil
@@ -89,19 +89,28 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
+@app.route("/set_case", methods=["POST"])
+@login_required
+def set_case():
+    case_id = request.form.get("case_id", "").strip()
+    if case_id:
+        session["case_id"] = case_id
+        flash(f"Active case set to: {case_id}", "info")
+    return redirect(request.referrer or url_for("dashboard"))
+
 @app.route("/")
 @login_required
 def dashboard():
     logs = get_hash_logs()
     stats = get_dashboard_stats()
     show_popup = not session.get("asked_copy", False)
-    return render_template("dashboard.html", logs=logs, stats=stats, show_popup=show_popup)
+    return render_template("dashboard.html", logs=logs, stats=stats, show_popup=show_popup, active_page="dashboard")
 
 @app.route("/evidence")
 @login_required
 def evidence():
     logs = get_hash_logs()
-    return render_template("evidence.html", logs=logs)
+    return render_template("evidence.html", logs=logs, active_page="evidence")
 
 @app.route("/confirm_copy", methods=["POST"])
 @login_required
@@ -161,6 +170,7 @@ def upload():
     if request.method == "POST":
         files = request.files.getlist("files")
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        case_id = session.get("case_id")
 
         uploaded_count = 0
         for file in files:
@@ -175,8 +185,8 @@ def upload():
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO hash_log (filename, sha256_hash) VALUES (%s, %s)",
-                    (save_path, file_hash)
+                    "INSERT INTO hash_log (filename, sha256_hash, case_id) VALUES (%s, %s, %s)",
+                    (save_path, file_hash, case_id)
                 )
                 conn.commit()
                 conn.close()
@@ -185,7 +195,25 @@ def upload():
         flash(f"{uploaded_count} file(s) uploaded and automatically hashed.", "success")
         return redirect(url_for("evidence"))
 
-    return render_template("upload.html")
+    return render_template("upload.html", active_page="upload")
+
+@app.route("/api/activity")
+@login_required
+def api_activity():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT filename, 'Hashed' AS action, logged_at AS ts FROM hash_log
+        UNION ALL
+        SELECT filename, CONCAT('Verify: ', result) AS action, checked_at AS ts FROM verification_log
+        ORDER BY ts DESC
+        LIMIT 8
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    for r in rows:
+        r["ts"] = r["ts"].strftime("%Y-%m-%d %H:%M:%S")
+    return jsonify({"activity": rows})
 
 if __name__ == "__main__":
     app.run(debug=True)

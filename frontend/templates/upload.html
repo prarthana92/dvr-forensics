@@ -1,47 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>TraceX — Upload Evidence</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cyborg/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-expand navbar-dark bg-dark px-4">
-        <a class="navbar-brand" href="/">TraceX</a>
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="/">Dashboard</a>
-            <a class="nav-link" href="/evidence">Evidence</a>
-            <a class="nav-link active" href="/upload">Upload</a>
-        </div>
-        <a class="nav-link" href="/logout">Logout</a>
-    </nav>
+{% extends "base.html" %}
+{% block title %}TraceX — Upload{% endblock %}
+{% block page_title %}Upload Evidence{% endblock %}
 
-    <div class="container mt-5" style="max-width: 600px;">
-        <h1>Upload Evidence</h1>
-        <p class="text-muted">Add new footage or files for acquisition. Each file is automatically hashed and logged on upload.</p>
+{% block content %}
+<p class="text-muted">Add new footage or files for acquisition. Each file is automatically hashed and logged on upload.</p>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+<div class="card evidence-item-card p-4 mt-3">
+    <h5>Upload File(s)</h5>
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="files" class="form-control mb-3" multiple>
+        <button type="submit" class="btn btn-accent">Upload Files</button>
+    </form>
+</div>
 
-        <div class="card bg-secondary bg-opacity-25 p-4 mt-4">
-            <h5>Upload File(s)</h5>
-            <form method="POST" action="/upload" enctype="multipart/form-data">
-                <input type="file" name="files" class="form-control mb-3" multiple>
-                <button type="submit" class="btn btn-primary">Upload Files</button>
-            </form>
-        </div>
-
-        <div class="card bg-secondary bg-opacity-25 p-4 mt-4">
-            <h5>Upload Folder</h5>
-            <form method="POST" action="/upload" enctype="multipart/form-data">
-                <input type="file" name="files" class="form-control mb-3" webkitdirectory directory multiple>
-                <button type="submit" class="btn btn-primary">Upload Folder</button>
-            </form>
-        </div>
-    </div>
-</body>
-</html>
+<div class="card evidence-item-card p-4 mt-4">
+    <h5>Upload Folder</h5>
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="files" class="form-control mb-3" webkitdirectory directory multiple>
+        <button type="submit" class="btn btn-accent">Upload Folder</button>
+    </form>
+</div>
+{% endblock %}
