@@ -95,11 +95,14 @@ def get_dashboard_stats(user_id):
     backup_folder = "../data/original_backup"
     backup_exists = os.path.isdir(backup_folder) and len(os.listdir(backup_folder)) > 0
 
+    trust_score = round((verified_count / total_evidence) * 100) if total_evidence > 0 else 0
+
     return {
         "total_evidence": total_evidence,
         "verified_count": verified_count,
         "alert_count": alert_count,
-        "backup_status": "Active" if backup_exists else "Not yet"
+        "backup_status": "Active" if backup_exists else "Not yet",
+        "trust_score": trust_score
     }
 
 def compute_sha256(filepath):
@@ -233,6 +236,14 @@ def set_case():
     case_id = request.form.get("case_id", "").strip()
     if case_id:
         session["case_id"] = case_id
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO cases (case_id, user_id) VALUES (%s, %s) ON DUPLICATE KEY UPDATE case_id = case_id",
+            (case_id, session["user_id"])
+        )
+        conn.commit()
+        conn.close()
         flash(f"Active case set to: {case_id}", "info")
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -287,6 +298,7 @@ def media(log_id):
         return redirect(url_for("evidence"))
 
     return send_file(record["filename"])
+
 @app.route("/verify/<int:log_id>")
 @login_required
 def verify(log_id):
@@ -360,6 +372,11 @@ def upload():
 
     return render_template("upload.html", active_page="upload")
 
+@app.route("/analysis")
+@login_required
+def analysis():
+    return render_template("analysis.html", active_page="analysis")
+
 @app.route("/custody")
 @login_required
 def custody():
@@ -385,6 +402,130 @@ def custody():
 
     records_desc = list(reversed(records))
     return render_template("custody.html", records=records_desc, active_page="custody", chain_valid=chain_valid, broken_at=broken_at)
+
+@app.route("/cases")
+@login_required
+def cases():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT c.*,
+        (SELECT COUNT(*) FROM hash_log h WHERE h.case_id = c.case_id AND h.user_id = c.user_id) AS evidence_count
+        FROM cases c
+        WHERE c.user_id = %s
+        ORDER BY c.created_at DESC
+    """, (session["user_id"],))
+    case_list = cursor.fetchall()
+    conn.close()
+
+    total = len(case_list)
+    pending = sum(1 for c in case_list if c["status"] == "pending")
+    in_progress = sum(1 for c in case_list if c["status"] == "in_progress")
+    completed = sum(1 for c in case_list if c["status"] == "completed")
+
+    return render_template("cases.html", cases=case_list, total=total, pending=pending,
+                            in_progress=in_progress, completed=completed, active_page="cases")
+
+@app.route("/cases/<case_id>")
+@login_required
+def case_detail(case_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM cases WHERE case_id = %s AND user_id = %s", (case_id, session["user_id"]))
+    case = cursor.fetchone()
+
+    if not case:
+        conn.close()
+        flash("Case not found.", "danger")
+        return redirect(url_for("cases"))
+
+    cursor.execute("""
+        SELECT h.*,
+        (SELECT v.result FROM verification_log v WHERE v.filename = h.filename ORDER BY v.checked_at DESC LIMIT 1) AS latest_status
+        FROM hash_log h
+        WHERE h.case_id = %s AND h.user_id = %s
+        ORDER BY h.logged_at DESC
+    """, (case_id, session["user_id"]))
+    case_evidence = cursor.fetchall()
+    conn.close()
+
+    return render_template("case_detail.html", case=case, logs=case_evidence, active_page="cases")
+
+@app.route("/cases/search")
+@login_required
+def search_cases():
+    query = request.args.get("q", "").strip()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT c.*,
+        (SELECT COUNT(*) FROM hash_log h WHERE h.case_id = c.case_id AND h.user_id = c.user_id) AS evidence_count
+        FROM cases c
+        WHERE c.user_id = %s AND (c.case_id LIKE %s OR c.case_name LIKE %s)
+        ORDER BY c.created_at DESC
+    """, (session["user_id"], f"%{query}%", f"%{query}%"))
+
+    results = cursor.fetchall()
+    conn.close()
+
+    for r in results:
+        r["created_at"] = r["created_at"].strftime("%Y-%m-%d %H:%M") if r["created_at"] else ""
+
+    return jsonify({"results": results})
+@app.route("/cases/add", methods=["GET", "POST"])
+@login_required
+def add_case():
+    errors = {}
+    form_data = {"case_id": "", "case_name": "", "status": "pending", "description": ""}
+
+    if request.method == "POST":
+        form_data["case_id"] = request.form.get("case_id", "").strip()
+        form_data["case_name"] = request.form.get("case_name", "").strip()
+        form_data["status"] = request.form.get("status", "pending")
+        form_data["description"] = request.form.get("description", "").strip()
+
+        if not form_data["case_id"]:
+            errors["case_id"] = "Case ID is required."
+        if not form_data["case_name"]:
+            errors["case_name"] = "Case name is required."
+
+        if not errors:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "INSERT INTO cases (case_id, case_name, user_id, status, description) VALUES (%s, %s, %s, %s, %s)",
+                    (form_data["case_id"], form_data["case_name"], session["user_id"], form_data["status"], form_data["description"])
+                )
+                conn.commit()
+                conn.close()
+                flash(f"Case '{form_data['case_name']}' created.", "success")
+                return redirect(url_for("cases"))
+            except mysql.connector.IntegrityError:
+                conn.close()
+                errors["case_id"] = "A case with this ID already exists."
+
+    return render_template("add_case.html", errors=errors, form_data=form_data, active_page="cases")
+@app.route("/cases/update_status", methods=["POST"])
+@login_required
+def update_case_status():
+    case_id = request.form.get("case_id")
+    new_status = request.form.get("status")
+    description = request.form.get("description", "").strip()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE cases SET status = %s, description = %s WHERE case_id = %s AND user_id = %s",
+        (new_status, description, case_id, session["user_id"])
+    )
+    conn.commit()
+    conn.close()
+    log_custody("Case Updated", details=f"Case {case_id} set to {new_status}")
+    flash(f"Case {case_id} updated.", "success")
+    return redirect(url_for("cases"))
 
 @app.route("/settings")
 @login_required

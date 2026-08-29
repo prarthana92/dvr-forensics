@@ -161,3 +161,7 @@ body {
 .activity-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
 
 .text-muted { color: var(--muted) !important; }
+.trust-gauge-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.trust-gauge-label { position: absolute; top: 0; left: 0; width: 140px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.trust-gauge-number { font-size: 1.6rem; font-weight: 700; }
+.trust-gauge-caption { font-size: 0.75rem; color: var(--muted); }

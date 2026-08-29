@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h2>New Case</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="case_id">Case ID</label>
+            <input type="text" id="case_id" name="case_id" value="{{ form_data.case_id }}">
+            {% if errors.case_id %}<span class="field-error">{{ errors.case_id }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="case_name">Case Name</label>
+            <input type="text" id="case_name" name="case_name" value="{{ form_data.case_name }}">
+            {% if errors.case_name %}<span class="field-error">{{ errors.case_name }}</span>{% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4">{{ form_data.description }}</textarea>
+        </div>
+
+        <button type="submit">Create Case</button>
+    </form>
+</div>
+{% endblock %}

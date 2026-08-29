@@ -3,6 +3,28 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+<div class="d-flex align-items-center gap-4 mb-4 flex-wrap">
+    <div class="trust-gauge-wrap">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="60" stroke="#1B2030" stroke-width="12" fill="none"/>
+            <circle cx="70" cy="70" r="60"
+                stroke="{{ '#22C55E' if stats.trust_score >= 90 else ('#F59E0B' if stats.trust_score >= 70 else '#EF4444') }}"
+                stroke-width="12" fill="none" stroke-linecap="round"
+                stroke-dasharray="{{ 2 * 3.14159 * 60 }}"
+                stroke-dashoffset="{{ 2 * 3.14159 * 60 * (1 - stats.trust_score/100) }}"
+                transform="rotate(-90 70 70)"/>
+        </svg>
+        <div class="trust-gauge-label">
+            <div class="trust-gauge-number">{{ stats.trust_score }}%</div>
+            <div class="trust-gauge-caption">Trust Score</div>
+        </div>
+    </div>
+    <div>
+        <h5 class="mb-1">Evidence Trust Score</h5>
+        <p class="text-muted mb-0">Percentage of your evidence that has been verified with no tampering detected.</p>
+    </div>
+</div>
+
 <div class="mb-4">
     <h6 class="text-muted mb-2">Supported Vendors</h6>
     <div class="d-flex flex-wrap gap-2">
@@ -21,21 +43,21 @@
     <div class="col-md-3">
         <div class="stat-card stat-purple">
             <div class="stat-icon stat-icon-purple"><i class="bi bi-folder2"></i></div>
-            <div class="stat-number">{{ stats.total_evidence }}</div>
+            <div class="stat-number" data-target="{{ stats.total_evidence }}">0</div>
             <div class="stat-label">Total Evidence</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card stat-green">
             <div class="stat-icon stat-icon-green"><i class="bi bi-shield-check"></i></div>
-            <div class="stat-number">{{ stats.verified_count }}</div>
+            <div class="stat-number" data-target="{{ stats.verified_count }}">0</div>
             <div class="stat-label">Verified</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card stat-red">
             <div class="stat-icon stat-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
-            <div class="stat-number">{{ stats.alert_count }}</div>
+            <div class="stat-number" data-target="{{ stats.alert_count }}">0</div>
             <div class="stat-label">Alerts</div>
         </div>
     </div>
@@ -121,4 +143,22 @@
     copyModal.show();
 </script>
 {% endif %}
+<script>
+document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+    const target = parseInt(el.getAttribute('data-target'), 10);
+    let current = 0;
+    const steps = 30;
+    const increment = target / steps;
+    const stepTime = 800 / steps;
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            el.textContent = target;
+            clearInterval(timer);
+        } else {
+            el.textContent = Math.floor(current);
+        }
+    }, stepTime);
+});
+</script>
 {% endblock %}

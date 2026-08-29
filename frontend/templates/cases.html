@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Cases{% endblock %}
+{% block page_title %}Cases{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card stat-purple">
+            <div class="stat-icon stat-icon-purple"><i class="bi bi-briefcase"></i></div>
+            <div class="stat-number">{{ total }}</div>
+            <div class="stat-label">Total Cases</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-number">{{ pending }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background:#1B2030;">
+            <div class="stat-icon" style="background: rgba(245,158,11,0.15); color:#F59E0B;"><i class="bi bi-arrow-repeat"></i></div>
+            <div class="stat-number">{{ in_progress }}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-green">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-number">{{ completed }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+</div>
+
+<h6 class="mb-3">Your Cases</h6>
+
+<input type="text" id="caseSearchBox" class="form-control mb-3" placeholder="Search cases by ID or description...">
+
+{% if cases|length == 0 %}
+    <div class="alert alert-secondary">No cases yet — set an active case from the Dashboard to create one.</div>
+{% endif %}
+
+<div class="row" id="casesGrid">
+    {% for c in cases %}
+    <div class="col-md-6 mb-3 case-card" data-search="{{ (c.case_id ~ ' ' ~ (c.description or ''))|lower }}">
+        <div class="card evidence-item-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h6 class="card-title mb-1"><a href="/cases/{{ c.case_id }}" class="text-decoration-none" style="color: var(--text);">{{ c.case_id }} <i class="bi bi-box-arrow-up-right" style="font-size: 0.7em;"></i></a></h6>
+                    {% if c.status == 'completed' %}
+                        <span class="status-badge status-verified">Completed</span>
+                    {% elif c.status == 'in_progress' %}
+                        <span class="status-badge" style="background: rgba(245,158,11,0.15); color:#F59E0B;">In Progress</span>
+                    {% else %}
+                        <span class="status-badge status-pending">Pending</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted mb-2" style="font-size:0.85em;">Evidence items: {{ c.evidence_count }} · Created: {{ c.created_at }}</p>
+
+                <form method="POST" action="/cases/update_status">
+                    <input type="hidden" name="case_id" value="{{ c.case_id }}">
+                    <input type="text" name="description" class="form-control form-control-sm mb-2" placeholder="What is this case about?" value="{{ c.description or '' }}">
+                    <div class="d-flex gap-2">
+                        <select name="status" class="form-select form-select-sm" style="max-width: 160px;">
+                            <option value="pending" {% if c.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="in_progress" {% if c.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if c.status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-accent">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('caseSearchBox').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('.case-card').forEach(card => {
+        const haystack = card.getAttribute('data-search');
+        card.style.display = haystack.includes(query) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
