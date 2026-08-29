@@ -3,8 +3,8 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="mb-3">
-    <h6 class="text-muted">Supported Vendors</h6>
+<div class="mb-4">
+    <h6 class="text-muted mb-2">Supported Vendors</h6>
     <div class="d-flex flex-wrap gap-2">
         <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Hikvision</span>
         <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Dahua</span>
@@ -17,44 +17,78 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-3 mb-3">
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
         <div class="stat-card stat-purple">
+            <div class="stat-icon stat-icon-purple"><i class="bi bi-folder2"></i></div>
             <div class="stat-number">{{ stats.total_evidence }}</div>
             <div class="stat-label">Total Evidence</div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card stat-olive">
+    <div class="col-md-3">
+        <div class="stat-card stat-green">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-shield-check"></i></div>
             <div class="stat-number">{{ stats.verified_count }}</div>
             <div class="stat-label">Verified</div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-3">
         <div class="stat-card stat-red">
+            <div class="stat-icon stat-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
             <div class="stat-number">{{ stats.alert_count }}</div>
             <div class="stat-label">Alerts</div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card stat-teal">
-            <div class="stat-number-small">{{ stats.backup_status }}</div>
+    <div class="col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-database"></i></div>
+            <div class="stat-number" style="font-size: 18px;">{{ stats.backup_status }}</div>
             <div class="stat-label">Original Backup</div>
         </div>
     </div>
 </div>
 
-<h5 class="mt-4">Evidence Log</h5>
-<table class="table table-dark table-striped table-sm">
+<h6 class="mb-3">Evidence Log</h6>
+<table class="table custom-table">
     <thead>
-        <tr><th>Filename</th><th>SHA-256</th><th>Logged At</th></tr>
+        <tr>
+            <th>File</th>
+            <th>SHA-256</th>
+            <th>Status</th>
+            <th>Logged At</th>
+            <th>Action</th>
+        </tr>
     </thead>
     <tbody>
         {% for log in logs %}
         <tr>
-            <td style="font-size:0.85em;">{{ log.filename }}</td>
-            <td style="font-size:0.75em;">{{ log.sha256_hash[:20] }}...</td>
-            <td style="font-size:0.85em;">{{ log.logged_at }}</td>
+            <td>
+                <span class="file-icon">
+                    {% if log.filename.endswith('.jpg') or log.filename.endswith('.jpeg') or log.filename.endswith('.png') %}
+                        <i class="bi bi-image"></i>
+                    {% else %}
+                        <i class="bi bi-file-earmark-text"></i>
+                    {% endif %}
+                </span>
+                {{ log.filename }}
+            </td>
+            <td>
+                <span style="font-family: monospace;">{{ log.sha256_hash[:16] }}...</span>
+                <button class="action-icon" onclick="navigator.clipboard.writeText('{{ log.sha256_hash }}')" title="Copy full hash"><i class="bi bi-clipboard"></i></button>
+            </td>
+            <td>
+                {% if log.latest_status == 'verified' %}
+                    <span class="status-badge status-verified"><i class="bi bi-check-circle"></i> Verified</span>
+                {% elif log.latest_status == 'mismatch' %}
+                    <span class="status-badge status-mismatch"><i class="bi bi-x-circle"></i> Mismatch</span>
+                {% else %}
+                    <span class="status-badge status-pending"><i class="bi bi-dash-circle"></i> Not Verified</span>
+                {% endif %}
+            </td>
+            <td>{{ log.logged_at }}</td>
+            <td>
+                <a href="/verify/{{ log.id }}" class="action-icon" title="Verify Integrity"><i class="bi bi-eye"></i></a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

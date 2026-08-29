@@ -1,25 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TraceX — Login</title>
+    <title>TraceX — Register</title>
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cyborg/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-5" style="max-width: 400px;">
         <h1 class="text-center mb-4">TraceX</h1>
-        <p class="text-muted text-center">Sign in to continue</p>
+        <p class="text-muted text-center">Create a new account</p>
 
         {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
 
         <form method="POST">
             <div class="mb-3">
@@ -30,9 +22,13 @@
                 <label class="form-label">Password</label>
                 <input type="password" name="password" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Sign In</button>
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create Account</button>
         </form>
-        <p class="text-center mt-3"><a href="/register">Don't have an account? Register</a></p>
+        <p class="text-center mt-3"><a href="/login">Already have an account? Sign in</a></p>
     </div>
 </body>
 </html>
