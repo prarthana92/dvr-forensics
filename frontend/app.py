@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response, send_file
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -273,6 +273,20 @@ def confirm_copy():
 
     return redirect(request.referrer or url_for("dashboard"))
 
+@app.route("/media/<int:log_id>")
+@login_required
+def media(log_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM hash_log WHERE id = %s AND user_id = %s", (log_id, session.get("user_id")))
+    record = cursor.fetchone()
+    conn.close()
+
+    if not record:
+        flash("Record not found.", "danger")
+        return redirect(url_for("evidence"))
+
+    return send_file(record["filename"])
 @app.route("/verify/<int:log_id>")
 @login_required
 def verify(log_id):
