@@ -1,0 +1,11 @@
+{
+    "evidence_id": "EVD-20260829-55FFA071",
+    "file_name": "sample_evidence.txt",
+    "file_size_bytes": 30,
+    "file_extension": ".txt",
+    "evidence_type": "UNKNOWN",
+    "acquisition_time": "2026-08-29 22:06:34",
+    "modification_time": "2026-08-26 19:51:08",
+    "md5": "76658b200d1e9023b949d20cf287755a",
+    "sha256": "7a8be0bb35c41b11e95ea7c0d636683071f0050dd3dc0064f8550c43e9356b6b"
+}

@@ -1,0 +1,41 @@
+# ============================================================
+# TRACEX GITIGNORE
+# ============================================================
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Runtime/generated output
+output/
+outputs/
+
+# Generated evidence/test media
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.webm
+
+# Recovery package used only for sharing/testing
+recovery.zip
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db

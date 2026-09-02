@@ -1,0 +1,35 @@
+{
+    "events": [
+        {
+            "frame": 120,
+            "timestamp_seconds": 4.0,
+            "detections": [
+                {
+                    "type": "motion",
+                    "label": "movement"
+                },
+                {
+                    "type": "object",
+                    "label": "person",
+                    "confidence": 0.94
+                }
+            ]
+        },
+        {
+            "frame": 180,
+            "timestamp_seconds": 6.0,
+            "detections": [
+                {
+                    "type": "face",
+                    "label": "face",
+                    "confidence": 0.88
+                },
+                {
+                    "type": "anomaly",
+                    "label": "unusual_activity",
+                    "confidence": 0.81
+                }
+            ]
+        }
+    ]
+}
