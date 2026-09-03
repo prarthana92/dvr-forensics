@@ -1,0 +1,42 @@
+{
+    "Dahua": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "CP Plus": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "Honeywell Security": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "TP-Link": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "Godrej": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "Uniview": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "HIKVISION": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    },
+    "Matrix": {
+        "validated": false,
+        "samples": [],
+        "features": {}
+    }
+}
