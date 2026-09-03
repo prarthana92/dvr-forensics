@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response, send_file
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, date
 from fpdf import FPDF
 import mysql.connector
 import shutil
@@ -104,6 +104,71 @@ def get_dashboard_stats(user_id):
         "backup_status": "Active" if backup_exists else "Not yet",
         "trust_score": trust_score
     }
+def ensure_daily_snapshot(user_id):
+    today = date.today()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT id FROM stats_snapshots WHERE user_id = %s AND snapshot_date = %s",
+        (user_id, today)
+    )
+    existing = cursor.fetchone()
+
+    if not existing:
+        cursor.execute("SELECT COUNT(*) AS c FROM hash_log WHERE user_id = %s", (user_id,))
+        total_evidence = cursor.fetchone()["c"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM verification_log v
+            JOIN hash_log h ON h.filename = v.filename
+            WHERE v.result = 'verified' AND h.user_id = %s
+        """, (user_id,))
+        verified_count = cursor.fetchone()["c"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM verification_log v
+            JOIN hash_log h ON h.filename = v.filename
+            WHERE v.result = 'mismatch' AND h.user_id = %s
+        """, (user_id,))
+        alert_count = cursor.fetchone()["c"]
+
+        insert_cursor = conn.cursor()
+        insert_cursor.execute(
+            "INSERT INTO stats_snapshots (user_id, snapshot_date, total_evidence, verified_count, alert_count) VALUES (%s, %s, %s, %s, %s)",
+            (user_id, today, total_evidence, verified_count, alert_count)
+        )
+        conn.commit()
+
+    conn.close()
+
+def get_snapshot_history(user_id, days=7):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT * FROM stats_snapshots
+        WHERE user_id = %s
+        ORDER BY snapshot_date DESC
+        LIMIT %s
+    """, (user_id, days))
+    rows = cursor.fetchall()
+    conn.close()
+    return list(reversed(rows))
+
+def sparkline_points(values, width=100, height=30):
+    if not values:
+        return ""
+    if len(values) == 1:
+        values = values * 2
+    min_v = min(values)
+    max_v = max(values)
+    range_v = max_v - min_v if max_v != min_v else 1
+    n = len(values)
+    points = []
+    for i, v in enumerate(values):
+        x = (i / (n - 1)) * width
+        y = height - ((v - min_v) / range_v) * height
+        points.append(f"{round(x,1)},{round(y,1)}")
+    return " ".join(points)
 
 def compute_sha256(filepath):
     sha256 = hashlib.sha256()
@@ -169,6 +234,36 @@ def generate_report_pdf(user_id, username, case_id):
         return output.encode("latin-1")
     return bytes(output)
 
+@app.context_processor
+def inject_system_status():
+    if not session.get("logged_in"):
+        return {}
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM custody_log WHERE performed_by = %s ORDER BY id ASC", (session.get("username"),))
+    records = cursor.fetchall()
+
+    chain_valid = True
+    prev_hash = "GENESIS"
+    for r in records:
+        ts_val = r["performed_at"]
+        ts_str = ts_val.strftime("%Y-%m-%d %H:%M:%S") if hasattr(ts_val, "strftime") else str(ts_val)
+        expected_hash = compute_entry_hash(prev_hash, r["action"], r["filename"], r["case_id"], r["performed_by"], r["details"], ts_str)
+        if r["prev_hash"] != prev_hash or r["entry_hash"] != expected_hash:
+            chain_valid = False
+            break
+        prev_hash = r["entry_hash"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM hash_log WHERE user_id = %s", (session.get("user_id"),))
+    total_hashes = cursor.fetchone()["c"]
+    conn.close()
+
+    return {"system_chain_valid": chain_valid, "system_total_hashes": total_hashes}
+
+def pct_change(current, previous):
+    if previous == 0:
+        return None
+    return round(((current - previous) / previous) * 100, 1)
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
@@ -221,7 +316,21 @@ def login():
             return redirect(url_for("dashboard"))
         else:
             error = "Invalid username or password."
-    return render_template("login.html", error=error)
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT COUNT(*) AS total FROM verification_log")
+    total_verifications = cursor.fetchone()["total"]
+    cursor.execute("SELECT COUNT(*) AS c FROM verification_log WHERE result = 'verified'")
+    verified_count = cursor.fetchone()["c"]
+    network_integrity = round((verified_count / total_verifications) * 100, 2) if total_verifications > 0 else 100.0
+
+    cursor.execute("SELECT sha256_hash FROM hash_log ORDER BY logged_at DESC LIMIT 1")
+    latest = cursor.fetchone()
+    latest_hash = latest["sha256_hash"] if latest else None
+    conn.close()
+
+    return render_template("login.html", error=error, network_integrity=network_integrity, latest_hash=latest_hash)
 
 @app.route("/logout", methods=["GET", "POST"])
 def logout():
@@ -250,10 +359,41 @@ def set_case():
 @app.route("/")
 @login_required
 def dashboard():
+    ensure_daily_snapshot(session["user_id"])
     logs = get_hash_logs(session["user_id"])
     stats = get_dashboard_stats(session["user_id"])
     show_popup = not session.get("asked_copy", False)
-    return render_template("dashboard.html", logs=logs, stats=stats, show_popup=show_popup, active_page="dashboard")
+    user_id = session["user_id"]
+
+    history = get_snapshot_history(user_id, days=7)
+    evidence_change = pct_change(history[-1]["total_evidence"], history[-2]["total_evidence"]) if len(history) >= 2 else None
+    verified_change = pct_change(history[-1]["verified_count"], history[-2]["verified_count"]) if len(history) >= 2 else None
+    evidence_points = sparkline_points([h["total_evidence"] for h in history])
+    verified_points = sparkline_points([h["verified_count"] for h in history])
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT COUNT(*) AS c FROM verification_log v
+        JOIN hash_log h ON h.filename = v.filename
+        WHERE v.result = 'verified' AND h.user_id = %s AND v.checked_at >= NOW() - INTERVAL 7 DAY
+    """, (user_id,))
+    verified_this_week = cursor.fetchone()["c"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM cases WHERE user_id = %s AND status != 'completed'", (user_id,))
+    active_investigations = cursor.fetchone()["c"]
+    conn.close()
+
+    pending_verification = max(stats["total_evidence"] - stats["verified_count"] - stats["alert_count"], 0)
+    greeting_hour = datetime.now().hour
+    greeting = "Good morning" if greeting_hour < 12 else ("Good afternoon" if greeting_hour < 18 else "Good evening")
+
+    return render_template("dashboard.html", logs=logs, stats=stats, show_popup=show_popup,
+                            active_page="dashboard", evidence_points=evidence_points,
+                            verified_points=verified_points, evidence_change=evidence_change,
+                            verified_change=verified_change, verified_this_week=verified_this_week,
+                            active_investigations=active_investigations,
+                            pending_verification=pending_verification, greeting=greeting)
 
 @app.route("/evidence")
 @login_required
