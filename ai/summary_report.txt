@@ -1,0 +1,18 @@
+============================================================
+FORENSIC AI ANALYSIS SUMMARY
+============================================================
+Video source : C:\Users\Alama\OneDrive\Desktop\dvr forensics\ai\sample_data\test1.mp4
+SHA-256 hash : d7e3ceeba55902bee5f6c9efbe68c8799266e699c7c5cb2d1a7180bcc7027ea2
+Analyzed at  : 2026-08-29T15:33:03.453140+00:00
+Total events : 8879
+------------------------------------------------------------
+- Frozen_segment (anomaly): 3 detections, first at 18.4s, last at 21.9s
+- Face (face): 5 detections, first at 9.2s, last at 9.8s, avg confidence 0.62
+- Motion (motion): 4372 detections, first at 0.0s, last at 24.6s
+- Backpack (object): 4 detections, first at 8.6s, last at 9.0s, avg confidence 0.30
+- Bicycle (object): 58 detections, first at 17.2s, last at 24.5s, avg confidence 0.40
+- Car (object): 1736 detections, first at 0.0s, last at 24.6s, avg confidence 0.53
+- Motorcycle (object): 29 detections, first at 0.0s, last at 1.4s, avg confidence 0.43
+- Person (object): 2440 detections, first at 0.0s, last at 24.6s, avg confidence 0.59
+- Truck (object): 232 detections, first at 0.0s, last at 18.2s, avg confidence 0.59
+============================================================
