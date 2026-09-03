@@ -58,3 +58,10 @@ backend/recovery.zip
 
 .DS_Store
 Thumbs.db
+# ============================================================
+# TraceX generated evidence records and reports
+# ============================================================
+backend/evidence_records/
+backend/reports/*.pdf
+backend/reports/*.txt
+backend/evidence/sample_evidence.txt
