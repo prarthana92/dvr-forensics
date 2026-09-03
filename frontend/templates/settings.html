@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
+            <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-account" type="button"><i class="bi bi-person me-2"></i>Account</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button"><i class="bi bi-cpu me-2"></i>AI Detection</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-processing" type="button"><i class="bi bi-search me-2"></i>Evidence Processing</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-custody" type="button"><i class="bi bi-link-45deg me-2"></i>Chain of Custody</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-notifications" type="button"><i class="bi bi-bell me-2"></i>Notifications</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-alerts" type="button"><i class="bi bi-exclamation-triangle me-2"></i>Alerts & Risk</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-storage" type="button"><i class="bi bi-hdd me-2"></i>Storage & Backup</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-privacy" type="button"><i class="bi bi-lock me-2"></i>Privacy & Security</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-appearance" type="button"><i class="bi bi-palette me-2"></i>Appearance</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-integrations" type="button"><i class="bi bi-plug me-2"></i>Integrations</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-api" type="button"><i class="bi bi-code-slash me-2"></i>API & Developer</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-auditlogs" type="button"><i class="bi bi-file-earmark-text me-2"></i>Audit Logs</button>
+            <hr>
+            <button class="nav-link text-start text-danger" data-bs-toggle="pill" data-bs-target="#tab-danger" type="button"><i class="bi bi-exclamation-octagon me-2"></i>Danger Zone</button>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-account">
+                <h5>Account</h5>
+                <p class="text-muted">Username: <strong>{{ user.username }}</strong></p>
+                <p class="text-muted">Account created: {{ user.created_at }}</p>
+                <h6 class="mt-4">Change Password</h6>
+                <form method="POST" action="/settings/change_password" style="max-width: 400px;">
+                    <div class="mb-2"><input type="password" name="current_password" class="form-control" placeholder="Current password" required></div>
+                    <div class="mb-2"><input type="password" name="new_password" class="form-control" placeholder="New password" required></div>
+                    <div class="mb-2"><input type="password" name="confirm_new_password" class="form-control" placeholder="Confirm new password" required></div>
+                    <button type="submit" class="btn btn-accent">Update Password</button>
+                </form>
+            </div>
+
+            <div class="tab-pane fade" id="tab-ai">
+                <h5>AI Detection</h5>
+                <p class="text-muted">Face, object, and motion detection — part of the ML analytics module.</p>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">Face Detection</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">Object Detection</label></div>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">Motion Detection</label></div>
+                <span class="badge bg-secondary mt-2">Coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-processing">
+                <h5>Evidence Processing</h5>
+                <p class="text-muted">Files are automatically hashed (SHA-256) on upload.</p>
+                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" checked disabled><label class="form-check-label">Auto-hash on upload</label></div>
+                <span class="badge bg-secondary mt-2">More options coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-custody">
+                <h5>Chain of Custody</h5>
+                <p class="text-muted">Every login, upload, backup, and verification is automatically logged with a timestamp.</p>
+                <a href="/custody" class="btn btn-accent">View Full Audit Trail</a>
+            </div>
+
+            <div class="tab-pane fade" id="tab-notifications">
+                <h5>Notifications</h5>
+                <p class="text-muted">Email/alert notification preferences.</p>
+                <span class="badge bg-secondary">Coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-alerts">
+                <h5>Alerts & Risk</h5>
+                <p class="text-muted">Current alerts: <strong>{{ stats.alert_count }}</strong></p>
+                <span class="badge bg-secondary">Threshold configuration coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-storage">
+                <h5>Storage & Backup</h5>
+                <p class="text-muted">Original backup status: <strong>{{ stats.backup_status }}</strong></p>
+                <form method="POST" action="/confirm_copy">
+                    <input type="hidden" name="already_copied" value="no">
+                    <button type="submit" class="btn btn-accent">Run Backup Now</button>
+                </form>
+            </div>
+
+            <div class="tab-pane fade" id="tab-privacy">
+                <h5>Privacy & Security</h5>
+                <p class="text-muted">Two-factor authentication and session controls.</p>
+                <span class="badge bg-secondary">Coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-appearance">
+                <h5>Appearance</h5>
+                <p class="text-muted">Current theme: <strong>Dark</strong></p>
+                <span class="badge bg-secondary">Theme customization coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-integrations">
+                <h5>Integrations</h5>
+                <p class="text-muted">Slack, webhook, and third-party tool integrations.</p>
+                <span class="badge bg-secondary">Coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-api">
+                <h5>API & Developer</h5>
+                <p class="text-muted">API key generation for programmatic access.</p>
+                <span class="badge bg-secondary">Coming soon</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-auditlogs">
+                <h5>Audit Logs</h5>
+                <p class="text-muted">Most recent actions:</p>
+                <ul class="list-group">
+                    {% for r in recent_audit %}
+                    <li class="list-group-item" style="font-size:0.85em;">{{ r.performed_at }} — {{ r.action }} {% if r.filename %}({{ r.filename }}){% endif %}</li>
+                    {% endfor %}
+                </ul>
+                <a href="/custody" class="btn btn-accent mt-3">View Full Log</a>
+            </div>
+
+            <div class="tab-pane fade" id="tab-danger">
+                <h5 class="text-danger">Danger Zone</h5>
+                <p class="text-muted">These actions cannot be undone.</p>
+                <form method="POST" action="/logout" class="mb-3">
+                    <button type="submit" class="btn btn-outline-warning">Log Out</button>
+                </form>
+                <form method="POST" action="/settings/delete_account" onsubmit="return confirm('Are you sure you want to permanently delete your account? This cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Delete My Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Chain of Custody{% endblock %}
+{% block page_title %}Chain of Custody{% endblock %}
+
+{% block content %}
+<p class="text-muted">Full audit trail of every action taken on evidence in this system.</p>
+
+{% if records|length == 0 %}
+    <div class="alert alert-secondary">No custody records yet.</div>
+{% elif chain_valid %}
+    <div class="alert alert-success d-flex align-items-center gap-2">
+        <i class="bi bi-shield-check fs-4"></i>
+        <div>
+            <strong>Chain Verified — No Tampering Detected</strong><br>
+            <small>All {{ records|length }} custody entries are cryptographically linked and unaltered.</small>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-danger d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-octagon fs-4"></i>
+        <div>
+            <strong>Chain Broken — Tampering or Data Loss Detected</strong><br>
+            <small>Integrity check failed at entry #{{ broken_at }}.</small>
+        </div>
+    </div>
+{% endif %}
+
+<table class="table custom-table mt-3">
+    <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Action</th>
+            <th>Filename</th>
+            <th>Case</th>
+            <th>Performed By</th>
+            <th>Details</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in records %}
+        <tr>
+            <td style="font-size:0.8em;">{{ r.performed_at }}</td>
+            <td style="font-size:0.85em;">{{ r.action }}</td>
+            <td style="font-size:0.8em;">{{ r.filename or "—" }}</td>
+            <td style="font-size:0.8em;">{{ r.case_id or "—" }}</td>
+            <td style="font-size:0.8em;">{{ r.performed_by }}</td>
+            <td style="font-size:0.8em;">{{ r.details or "—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

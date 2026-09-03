@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block page_title %}{{ greeting }}, {{ session.get('username') }}{% endblock %}
+{% block page_subtitle %}Here's the chain of custody at a glance.{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end gap-2 mb-3">
+    <input type="text" class="form-control case-input" placeholder="Search evidence" style="max-width:220px;">
+    <a href="/upload" class="btn btn-accent"><i class="bi bi-cloud-upload me-1"></i> New acquisition</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="d-flex justify-content-between">
+                <i class="bi bi-folder2"></i>
+                {% if evidence_change is not none %}
+                    <span class="metal-badge">{{ '+' if evidence_change >= 0 else '' }}{{ evidence_change }}%</span>
+                {% else %}
+                    <span class="metal-badge">New</span>
+                {% endif %}
+            </div>
+            <div class="metal-label">Evidence items</div>
+            <div class="metal-number">{{ stats.total_evidence }}</div>
+            <svg width="100%" height="20" viewBox="0 0 100 30" preserveAspectRatio="none" style="margin-top:6px">
+                <polyline points="{{ evidence_points }}" fill="none" stroke="var(--primary-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="d-flex justify-content-between">
+                <i class="bi bi-check-circle"></i>
+                {% if verified_change is not none %}
+                    <span class="metal-badge">{{ '+' if verified_change >= 0 else '' }}{{ verified_change }}%</span>
+                {% else %}
+                    <span class="metal-badge">New</span>
+                {% endif %}
+            </div>
+            <div class="metal-label">Verified this week</div>
+            <div class="metal-number">{{ verified_this_week }}</div>
+            <svg width="100%" height="20" viewBox="0 0 100 30" preserveAspectRatio="none" style="margin-top:6px">
+                <polyline points="{{ verified_points }}" fill="none" stroke="var(--primary-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="d-flex justify-content-between">
+                <i class="bi bi-activity"></i>
+                <span class="metal-badge">{{ active_investigations }} active</span>
+            </div>
+            <div class="metal-label">Active investigations</div>
+            <div class="metal-number">{{ active_investigations }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card text-center">
+            <div class="metal-label mb-2" style="text-align:left;">Chain integrity</div>
+            <div class="trust-gauge-wrap">
+                <svg width="130" height="130" viewBox="0 0 130 130">
+                    <circle cx="65" cy="65" r="55" stroke="var(--elevated-bg)" stroke-width="10" fill="none"/>
+                    <circle cx="65" cy="65" r="55"
+                        stroke="{{ 'var(--success)' if system_chain_valid else 'var(--danger)' }}"
+                        stroke-width="10" fill="none" stroke-linecap="round"
+                        stroke-dasharray="{{ 2 * 3.14159 * 55 }}"
+                        stroke-dashoffset="{{ 0 if system_chain_valid else (2 * 3.14159 * 55 * 0.3) }}"
+                        transform="rotate(-90 65 65)"/>
+                </svg>
+                <div class="trust-gauge-label">
+                    <div class="trust-gauge-number">{{ '100%' if system_chain_valid else 'Alert' }}</div>
+                    <div class="trust-gauge-caption">verified</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="metal-card mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <div class="metal-label mb-1">Evidence pipeline</div>
+            <h5 class="mb-1">From capture to courtroom</h5>
+            <p class="text-muted mb-0">Every handoff leaves a verifiable digital fingerprint.</p>
+        </div>
+        <a href="/timeline" class="btn btn-sm btn-accent">Open full flow <i class="bi bi-box-arrow-up-right"></i></a>
+    </div>
+    <div class="d-flex gap-3 flex-wrap">
+        <div class="pipeline-stage">
+            <span class="pipeline-badge">{{ pending_verification }} queued</span>
+            <div class="pipeline-icon"><i class="bi bi-upload"></i></div>
+            <div class="fw-semibold">Acquire</div>
+            <div class="text-muted" style="font-size:0.8em;">DVR / NVR capture</div>
+        </div>
+        <div class="pipeline-stage">
+            <span class="pipeline-badge">Live</span>
+            <div class="pipeline-icon"><i class="bi bi-hash"></i></div>
+            <div class="fw-semibold">Hash ingestion</div>
+            <div class="text-muted" style="font-size:0.8em;">SHA-256 fingerprint</div>
+        </div>
+        <div class="pipeline-stage">
+            <span class="pipeline-badge">{{ stats.trust_score }}%</span>
+            <div class="pipeline-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="fw-semibold">Tamper check</div>
+            <div class="text-muted" style="font-size:0.8em;">Chain validation</div>
+        </div>
+        <div class="pipeline-stage">
+            <span class="pipeline-badge">{{ stats.verified_count }} ready</span>
+            <div class="pipeline-icon"><i class="bi bi-file-earmark-check"></i></div>
+            <div class="fw-semibold">Court report</div>
+            <div class="text-muted" style="font-size:0.8em;">Export-ready proof</div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <h6 class="text-muted mb-2">Supported Vendors</h6>
+    <div class="d-flex flex-wrap gap-2">
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Hikvision</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Dahua</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>CP Plus</span>
+        <span class="vendor-badge"><i class="bi bi-camera-video me-1"></i>Honeywell</span>
+    </div>
+</div>
+
+<h6 class="mb-3">Evidence Log</h6>
+<table class="table custom-table">
+    <thead><tr><th>File</th><th>SHA-256</th><th>Status</th><th>Logged At</th><th>Action</th></tr></thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <td><span class="file-icon"><i class="bi bi-file-earmark-text"></i></span>{{ log.filename }}</td>
+            <td><span style="font-family: monospace;">{{ log.sha256_hash[:16] }}...</span></td>
+            <td>
+                {% if log.latest_status == 'verified' %}<span class="status-badge status-verified">Verified</span>
+                {% elif log.latest_status == 'mismatch' %}<span class="status-badge status-mismatch">Mismatch</span>
+                {% else %}<span class="status-badge status-pending">Not Verified</span>{% endif %}
+            </td>
+            <td>{{ log.logged_at }}</td>
+            <td><a href="/verify/{{ log.id }}" class="action-icon"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="modal fade" id="copyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border border-secondary">
+            <div class="modal-header"><h5 class="modal-title">Evidence Handling Check</h5></div>
+            <div class="modal-body"><p>Have you already made a backup copy of this footage/data elsewhere?</p></div>
+            <form method="POST" action="/confirm_copy">
+                <div class="modal-footer">
+                    <button type="submit" name="already_copied" value="yes" class="btn btn-success">Yes, already copied</button>
+                    <button type="submit" name="already_copied" value="no" class="btn btn-warning">No, copy it now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if show_popup %}
+<script>
+    var copyModal = new bootstrap.Modal(document.getElementById('copyModal'));
+    copyModal.show();
+</script>
+{% endif %}
+{% endblock %}

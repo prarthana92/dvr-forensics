@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TraceX — Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/cyborg/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5" style="max-width: 400px;">
+        <h1 class="text-center mb-4">TraceX</h1>
+        <p class="text-muted text-center">Create a new account</p>
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create Account</button>
+        </form>
+        <p class="text-center mt-3"><a href="/login">Already have an account? Sign in</a></p>
+    </div>
+</body>
+</html>

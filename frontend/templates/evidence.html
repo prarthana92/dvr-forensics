@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Evidence{% endblock %}
+{% block page_title %}Evidence{% endblock %}
+
+{% block content %}
+<input type="text" id="searchBox" class="form-control mb-3" placeholder="Search by filename...">
+
+<div class="row" id="evidenceGrid">
+    {% for log in logs %}
+    <div class="col-md-6 mb-3 evidence-card" data-filename="{{ log.filename|lower }}">
+        <div class="card evidence-item-card">
+            <div class="card-body">
+                <h6 class="card-title">{{ log.filename }}</h6>
+
+                {% set ext = log.filename|lower %}
+                {% if ext.endswith('.mp4') or ext.endswith('.avi') or ext.endswith('.mov') or ext.endswith('.mkv') or ext.endswith('.webm') %}
+                    <video controls class="w-100 mb-2" style="max-height: 220px; background: #000;">
+                        <source src="/media/{{ log.id }}">
+                        Your browser does not support video playback.
+                    </video>
+                {% elif ext.endswith('.jpg') or ext.endswith('.jpeg') or ext.endswith('.png') or ext.endswith('.gif') %}
+                    <img src="/media/{{ log.id }}" class="w-100 mb-2" style="max-height: 220px; object-fit: contain; background: #000;">
+                {% endif %}
+
+                <p class="card-text" style="font-size: 0.75em; word-break: break-all;">SHA-256: {{ log.sha256_hash }}</p>
+                <span class="badge bg-success">Logged</span>
+                <small class="text-muted d-block mt-2">Logged: {{ log.logged_at }}</small>
+                <a href="/verify/{{ log.id }}" class="btn btn-sm btn-outline-info mt-3">Verify Integrity</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchBox').addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('.evidence-card').forEach(card => {
+        const filename = card.getAttribute('data-filename');
+        card.style.display = filename.includes(query) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

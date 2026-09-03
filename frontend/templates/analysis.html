@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Analysis{% endblock %}
+{% block page_title %}Analysis{% endblock %}
+
+{% block content %}
+<p class="text-muted">Deeper evidence analysis — metadata, extracted frames, AI detection results, and recovered footage will appear here as backend and AI modules are integrated.</p>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
+            <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-metadata" type="button"><i class="bi bi-file-earmark-text me-2"></i>Metadata</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-frames" type="button"><i class="bi bi-images me-2"></i>Frame Viewer</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button"><i class="bi bi-cpu me-2"></i>AI Results</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-recovery" type="button"><i class="bi bi-arrow-counterclockwise me-2"></i>Recovery</button>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-metadata">
+                <h5>Metadata</h5>
+                <p class="text-muted">Will display file format, duration, resolution, codec, and frame rate, extracted via FFprobe by the backend metadata module.</p>
+                <span class="badge bg-secondary">Coming soon — pending backend integration</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-frames">
+                <h5>Frame Viewer</h5>
+                <p class="text-muted">Will show frames extracted from evidence video, each linked to its exact timestamp in the original footage.</p>
+                <span class="badge bg-secondary">Coming soon — pending backend integration</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-ai">
+                <h5>AI Results</h5>
+                <p class="text-muted">Will display face, object, and motion detection results with timestamps and confidence scores.</p>
+                <span class="badge bg-secondary">Coming soon — pending AI module integration</span>
+            </div>
+
+            <div class="tab-pane fade" id="tab-recovery">
+                <h5>Recovery</h5>
+                <p class="text-muted">Will show recovered or previously deleted footage segments, once the recovery (carving) module is built.</p>
+                <span class="badge bg-secondary">Coming soon — not yet started</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
