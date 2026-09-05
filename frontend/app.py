@@ -3,16 +3,30 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
 from fpdf import FPDF
+from flask_wtf.csrf import CSRFProtect
 import mysql.connector
 import shutil
 import hashlib
 import os
+import json
 from functools import wraps
 
-app = Flask(__name__)
-app.secret_key = "tracex_secret_key_change_this"
+from metadata_service import extract_metadata
+from video_service import extract_frames
 
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-fallback-change-in-production")
+
+# --- Security hardening ---
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV") == "production"
+app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB per request
+csrf = CSRFProtect(app)
+
+MIN_PASSWORD_LENGTH = 8
 UPLOAD_FOLDER = "../data/uploads"
+FRAMES_ROOT = "../data/frames"  # each evidence file gets its own subfolder under here
 
 def login_required(f):
     @wraps(f)
@@ -24,10 +38,10 @@ def login_required(f):
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="PRar7T2*",
-        database="dvrdb"
+        host=os.environ.get("DB_HOST", "localhost"),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASSWORD", ""),
+        database=os.environ.get("DB_NAME", "dvrdb")
     )
 
 def compute_entry_hash(prev_hash, action, filename, case_id, performed_by, details, ts_str):
@@ -104,6 +118,7 @@ def get_dashboard_stats(user_id):
         "backup_status": "Active" if backup_exists else "Not yet",
         "trust_score": trust_score
     }
+
 def ensure_daily_snapshot(user_id):
     today = date.today()
     conn = get_db_connection()
@@ -264,6 +279,7 @@ def pct_change(current, previous):
     if previous == 0:
         return None
     return round(((current - previous) / previous) * 100, 1)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
@@ -274,6 +290,8 @@ def register():
 
         if not username or not password:
             error = "Username and password are required."
+        elif len(password) < MIN_PASSWORD_LENGTH:
+            error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
         elif password != confirm:
             error = "Passwords do not match."
         else:
@@ -437,7 +455,7 @@ def media(log_id):
         flash("Record not found.", "danger")
         return redirect(url_for("evidence"))
 
-    return send_file(record["filename"])
+    return send_file(record["filename"], as_attachment=True)
 
 @app.route("/verify/<int:log_id>")
 @login_required
@@ -502,10 +520,64 @@ def upload():
                     (save_path, file_hash, case_id, user_id)
                 )
                 conn.commit()
+                hash_log_id = cursor.lastrowid
                 conn.close()
                 uploaded_count += 1
 
                 log_custody("Evidence Uploaded", filename=save_path, details="Automatically hashed on upload")
+
+                # --- Metadata extraction (video files only, non-fatal on failure) ---
+                try:
+                    metadata = extract_metadata(save_path)
+                    meta_conn = get_db_connection()
+                    meta_cursor = meta_conn.cursor()
+                    meta_cursor.execute(
+                        "INSERT INTO evidence_metadata (hash_log_id, format, size_bytes, duration_seconds, width, height, video_codec, frame_rate) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                        (
+                            hash_log_id,
+                            metadata.get("format"),
+                            int(metadata["size_bytes"]) if metadata.get("size_bytes") else None,
+                            float(metadata["duration_seconds"]) if metadata.get("duration_seconds") else None,
+                            metadata.get("width"),
+                            metadata.get("height"),
+                            metadata.get("video_codec"),
+                            metadata.get("frame_rate"),
+                        )
+                    )
+                    meta_conn.commit()
+                    meta_conn.close()
+                except RuntimeError as e:
+                    flash(f"Note: couldn't extract video metadata for {filename}: {e}", "warning")
+
+                # --- Frame extraction (video files only, non-fatal on failure) ---
+                # Each evidence file gets its OWN output folder (named by hash_log_id) so
+                # extracting frames for one file never touches another file's frames.
+                # clean_output_folder() from video_service is intentionally NOT called here —
+                # it's meant for standalone dev/test runs only, never for live evidence.
+                try:
+                    frame_output_folder = os.path.join(FRAMES_ROOT, f"evidence_{hash_log_id}")
+                    saved_count = extract_frames(save_path, frame_output_folder, interval_seconds=1)
+
+                    index_path = os.path.join(frame_output_folder, "frame_index.json")
+                    with open(index_path, "r", encoding="utf-8") as f:
+                        frame_index = json.load(f)
+
+                    frame_conn = get_db_connection()
+                    frame_cursor = frame_conn.cursor()
+                    for entry in frame_index:
+                        frame_full_path = os.path.join(frame_output_folder, entry["frame"])
+                        frame_cursor.execute(
+                            "INSERT INTO frames (hash_log_id, frame_path, timestamp_seconds) VALUES (%s, %s, %s)",
+                            (hash_log_id, frame_full_path, entry["timestamp_seconds"])
+                        )
+                    frame_conn.commit()
+                    frame_conn.close()
+
+                    if saved_count > 0:
+                        log_custody("Frames Extracted", filename=save_path, details=f"{saved_count} frame(s) extracted")
+                except (FileNotFoundError, ValueError, RuntimeError) as e:
+                    flash(f"Note: couldn't extract frames for {filename}: {e}", "warning")
 
         flash(f"{uploaded_count} file(s) uploaded and automatically hashed.", "success")
         return redirect(url_for("evidence"))
@@ -515,7 +587,40 @@ def upload():
 @app.route("/analysis")
 @login_required
 def analysis():
-    return render_template("analysis.html", active_page="analysis")
+    ai_results = None
+    ai_summary = None
+    ai_results_path = "../ai/ai_results.json"
+    if os.path.exists(ai_results_path):
+        with open(ai_results_path, "r") as f:
+            ai_results = json.load(f)
+
+        type_counts = {}
+        label_counts = {}
+        notable_events = []
+
+        for event in ai_results.get("events", []):
+            for d in event["detections"]:
+                dtype = d["type"]
+                type_counts[dtype] = type_counts.get(dtype, 0) + 1
+                if dtype != "motion":
+                    label = d.get("label", "unknown")
+                    label_counts[label] = label_counts.get(label, 0) + 1
+                    notable_events.append({
+                        "frame": event["frame"],
+                        "timestamp": event["timestamp_seconds"],
+                        "type": dtype,
+                        "label": label,
+                        "confidence": d.get("confidence")
+                    })
+
+        ai_summary = {
+            "total_frames": len(ai_results.get("events", [])),
+            "type_counts": type_counts,
+            "label_counts": label_counts,
+            "notable_events": notable_events[:200]
+        }
+
+    return render_template("analysis.html", active_page="analysis", ai_results=ai_results, ai_summary=ai_summary)
 
 @app.route("/custody")
 @login_required
@@ -615,6 +720,7 @@ def search_cases():
         r["created_at"] = r["created_at"].strftime("%Y-%m-%d %H:%M") if r["created_at"] else ""
 
     return jsonify({"results": results})
+
 @app.route("/cases/add", methods=["GET", "POST"])
 @login_required
 def add_case():
@@ -629,8 +735,16 @@ def add_case():
 
         if not form_data["case_id"]:
             errors["case_id"] = "Case ID is required."
+        elif len(form_data["case_id"]) > 64:
+            errors["case_id"] = "Case ID must be under 64 characters."
+
         if not form_data["case_name"]:
             errors["case_name"] = "Case name is required."
+        elif len(form_data["case_name"]) > 255:
+            errors["case_name"] = "Case name must be under 255 characters."
+
+        if form_data["status"] not in ("pending", "in_progress", "completed"):
+            errors["status"] = "Invalid status."
 
         if not errors:
             conn = get_db_connection()
@@ -649,12 +763,18 @@ def add_case():
                 errors["case_id"] = "A case with this ID already exists."
 
     return render_template("add_case.html", errors=errors, form_data=form_data, active_page="cases")
+
 @app.route("/cases/update_status", methods=["POST"])
 @login_required
 def update_case_status():
     case_id = request.form.get("case_id")
     new_status = request.form.get("status")
     description = request.form.get("description", "").strip()
+
+    if new_status not in ("pending", "in_progress", "completed"):
+        flash("Invalid status.", "danger")
+        return redirect(url_for("cases"))
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -696,8 +816,8 @@ def change_password():
         flash("Current password is incorrect.", "danger")
     elif new != confirm:
         flash("New passwords do not match.", "danger")
-    elif len(new) < 4:
-        flash("New password is too short.", "danger")
+    elif len(new) < MIN_PASSWORD_LENGTH:
+        flash(f"New password must be at least {MIN_PASSWORD_LENGTH} characters.", "danger")
     else:
         new_hash = generate_password_hash(new)
         update_cursor = conn.cursor()
@@ -753,4 +873,5 @@ def api_activity():
     return jsonify({"activity": rows})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
+    
