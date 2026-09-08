@@ -27,12 +27,7 @@ from pipeline import run_pipeline     # type: ignore[reportMissingImports]
 from correlation.event_linker import correlate_events
 from utils.event_schema import DetectionEvent
 
-PARSERS_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'parsers')
-sys.path.append(os.path.join(PARSERS_FOLDER, 'hikvision'))
-sys.path.append(os.path.join(PARSERS_FOLDER, 'dahua'))
-from detector import is_hikvision_image as check_hikvision
-from dhav_parser import scan_for_dhav_frames as check_dahua
-
+from parser.vendor_detector import detect_vendor as run_vendor_detection
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-fallback-change-in-production")
 
@@ -386,21 +381,13 @@ def process_recovery_pipeline(hash_log_id, video_path):
 
 def detect_vendor(filepath):
     try:
-        if check_hikvision(filepath):
-            return "Hikvision"
-    except Exception:
-        pass
-
-    try:
-        with open(filepath, "rb") as f:
-            data = f.read()
-        frames = check_dahua(data)
-        if len(frames) > 0:
-            return "Dahua"
-    except Exception:
-        pass
-
-    return "Unknown"
+        result = run_vendor_detection(filepath)
+        vendor = result["detection"]["vendor"]
+        confidence = result["detection"]["confidence"]
+        return (vendor.title() if vendor != "UNKNOWN" else "Unknown"), confidence
+    except Exception as e:
+        print(f"Vendor detection failed: {e}")
+        return "Unknown", "LOW"
 
 def compute_sha256(filepath):
     sha256 = hashlib.sha256()
@@ -871,10 +858,10 @@ def upload():
                 hash_log_id = cursor.lastrowid
                 conn.close()
                 uploaded_count += 1
-                vendor = detect_vendor(save_path)
+                vendor, vendor_confidence = detect_vendor(save_path)
                 vendor_conn = get_db_connection()
                 vendor_cursor = vendor_conn.cursor()
-                vendor_cursor.execute("UPDATE hash_log SET vendor = %s WHERE id = %s", (vendor, hash_log_id))
+                vendor_cursor.execute("UPDATE hash_log SET vendor = %s, vendor_confidence = %s WHERE id = %s", (vendor, vendor_confidence, hash_log_id))
                 vendor_conn.commit()
                 vendor_conn.close()
 
