@@ -65,3 +65,15 @@ backend/evidence_records/
 backend/reports/*.pdf
 backend/reports/*.txt
 backend/evidence/sample_evidence.txt
+
+# TraceX generated forensic data
+data/uploads/
+data/recovery/
+data/frames/
+
+# AI generated results
+ai/results/
+ai/ai_results.json
+
+# Large ML model
+frontend/*.pt

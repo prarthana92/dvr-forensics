@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="metal-card">
+            <div class="metal-label">Total cases</div>
+            <div class="metal-number">{{ total_reports }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metal-card">
+            <div class="metal-label">Total evidence files</div>
+            <div class="metal-number">{{ total_evidence }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metal-card">
+            <div class="metal-label">Report format</div>
+            <div class="metal-number" style="font-size: 1.2rem;">PDF</div>
+        </div>
+    </div>
+</div>
+
+<table class="table custom-table">
+    <thead>
+        <tr>
+            <th>Case</th>
+            <th>Evidence count</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in case_reports %}
+        <tr>
+            <td><span class="file-icon"><i class="bi bi-folder"></i></span>{{ c.case_name }} <span class="text-muted">({{ c.case_id }})</span></td>
+            <td>{{ c.evidence_count }} file{{ 's' if c.evidence_count != 1 else '' }}</td>
+            <td>
+                {% if c.evidence_count == 0 %}
+                <span class="status-badge status-pending">No evidence</span>
+                {% elif c.incomplete_count > 0 %}
+                <span class="status-badge status-pending">AI processing ({{ c.incomplete_count }} pending)</span>
+                {% else %}
+                <span class="status-badge status-verified">Ready</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if c.evidence_count > 0 and c.incomplete_count == 0 %}
+                <a href="/report/pdf/{{ c.case_id }}" class="btn btn-sm btn-accent">Download PDF</a>
+                {% else %}
+                <button class="btn btn-sm btn-accent" disabled style="opacity: 0.5;">Download PDF</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-muted">No cases yet. <a href="/cases/add">Create a case</a> to get started.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

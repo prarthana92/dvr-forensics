@@ -22,9 +22,67 @@
                     <img src="/media/{{ log.id }}" class="w-100 mb-2" style="max-height: 220px; object-fit: contain; background: #000;">
                 {% endif %}
 
-                <p class="card-text" style="font-size: 0.75em; word-break: break-all;">SHA-256: {{ log.sha256_hash }}</p>
+                                <p class="card-text" style="font-size: 0.75em; word-break: break-all;">SHA-256: {{ log.sha256_hash }}</p>
+                                {% if log.vendor and log.vendor != 'Unknown' %}
+<span class="badge bg-info text-dark">{{ log.vendor }}</span>
+{% elif log.vendor == 'Unknown' %}
+<span class="badge bg-secondary">Vendor: Unknown</span>
+{% endif %}
                 <span class="badge bg-success">Logged</span>
+                <div class="mt-2" style="font-size: 0.8em;">
+    <strong class="text-muted">AI Status:</strong> {{ log.ai_status or 'pending' }}
+    {% if log.ai_summary %}
+    &nbsp;·&nbsp;
+    <span class="metal-badge">{{ log.ai_summary.motion_count }} motion</span>
+    <span class="metal-badge">{{ log.ai_summary.object_count }} objects</span>
+    <span class="metal-badge">{{ log.ai_summary.face_count }} faces</span>
+    {% if log.ai_summary.anomaly_count > 0 %}
+    <span class="status-badge status-mismatch">{{ log.ai_summary.anomaly_count }} anomalies</span>
+    {% else %}
+    <span class="metal-badge">0 anomalies</span>
+    {% endif %}
+    {% endif %}
+    <a href="/analysis/{{ log.id }}" class="btn btn-sm btn-accent ms-2">View AI Analysis</a>
+</div>
+{% if log.recovery %}
+<div class="mt-2" style="font-size: 0.8em;">
+    <strong class="text-muted">Recovery:</strong>
+    {% if log.recovery.overall_status == 'FULLY_RECOVERED' %}
+    <span class="status-badge status-verified">Fully recovered</span>
+    {% elif log.recovery.overall_status == 'PARTIALLY_RECOVERED' %}
+    <span class="status-badge status-pending">Partially recovered</span>
+    {% else %}
+    <span class="status-badge status-mismatch">Recovery failed</span>
+    {% endif %}
+    &nbsp;·&nbsp;
+    <span class="metal-badge">{{ "%.1f"|format(log.recovery.recovered_duration_seconds or 0) }}s recovered</span>
+    <span class="metal-badge">{{ "%.1f"|format(log.recovery.missing_duration_seconds or 0) }}s missing</span>
+    <a href="/recovery/{{ log.id }}" class="btn btn-sm btn-accent ms-2">View recovery details</a>
+</div>
+{% elif log.recovery_status == 'processing' %}
+<div class="mt-2" style="font-size: 0.8em;">
+    <strong class="text-muted">Recovery:</strong> <span class="metal-badge">Processing...</span>
+</div>
+{% endif %}
                 <small class="text-muted d-block mt-2">Logged: {{ log.logged_at }}</small>
+
+                {% if log.metadata %}
+                <div class="mt-2 text-muted" style="font-size: 0.8em;">
+                    <strong>Format:</strong> {{ log.metadata.format }} &nbsp;·&nbsp;
+                    <strong>Duration:</strong> {{ log.metadata.duration_seconds }}s &nbsp;·&nbsp;
+                    <strong>Resolution:</strong> {{ log.metadata.width }}×{{ log.metadata.height }} &nbsp;·&nbsp;
+                    <strong>Codec:</strong> {{ log.metadata.video_codec }}
+                </div>
+                {% endif %}
+
+                {% if log.frames %}
+                <div class="d-flex gap-2 mt-2" style="overflow-x: auto;">
+                    {% for frame in log.frames %}
+                    <img src="/frame/{{ frame.id }}" style="height: 60px; border-radius: 4px;" title="{{ frame.timestamp_seconds }}s">
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <a href="/verify/{{ log.id }}" class="btn btn-sm btn-outline-info mt-3">Verify Integrity</a>
             </div>
         </div>

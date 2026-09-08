@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Recovery{% endblock %}
+{% block page_title %}Recovery report{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-3">{{ evidence.filename }}</p>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="metal-label">Status</div>
+            <div class="metal-number" style="font-size: 1.1rem;">
+                {% if recovery.overall_status == 'FULLY_RECOVERED' %}
+                <span class="status-badge status-verified">Fully recovered</span>
+                {% elif recovery.overall_status == 'PARTIALLY_RECOVERED' %}
+                <span class="status-badge status-pending">Partially recovered</span>
+                {% else %}
+                <span class="status-badge status-mismatch">Recovery failed</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="metal-label">Recovered duration</div>
+            <div class="metal-number">{{ "%.2f"|format(recovery.recovered_duration_seconds or 0) }}s</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="metal-label">Missing duration</div>
+            <div class="metal-number">{{ "%.2f"|format(recovery.missing_duration_seconds or 0) }}s</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metal-card">
+            <div class="metal-label">Physical sample availability</div>
+            <div class="metal-number">{{ "%.1f"|format(recovery.physical_sample_availability_percentage or 0) }}%</div>
+        </div>
+    </div>
+</div>
+
+{% if recovery.final_timeline_video %}
+<div class="metal-card mb-4">
+    <div class="metal-label mb-2">Final timeline video</div>
+    <p class="text-muted" style="font-size: 0.8em;">Recovered footage plays normally. Black segments labeled MISSING represent portions of the original timeline that could not be recovered — they are not claimed as recovered evidence.</p>
+    <video controls class="w-100" style="max-height: 400px; background: #000;">
+        <source src="/recovery/video/{{ evidence.id }}">
+        Your browser does not support video playback.
+    </video>
+</div>
+{% endif %}
+
+<div class="d-flex gap-2 mb-4">
+    <a href="/recovery/report/{{ evidence.id }}" class="btn btn-sm btn-accent">Download full report (JSON)</a>
+    {% if recovery.final_timeline_video %}
+    <a href="/recovery/video/{{ evidence.id }}" class="btn btn-sm btn-accent" download>Download timeline video</a>
+    {% endif %}
+</div>
+
+{% if regions %}
+<table class="table custom-table">
+    <thead>
+        <tr>
+            <th>Region</th>
+            <th>Time range</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in regions %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ "%.2f"|format(r.time_start_seconds or 0) }}s → {{ "%.2f"|format(r.time_end_seconds or 0) }}s</td>
+            <td>
+                {% if r.status in ['RECOVERED', 'RECOVERABLE'] %}
+                <span class="status-badge status-verified">{{ r.status }}</span>
+                {% else %}
+                <span class="status-badge status-mismatch">{{ r.status }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

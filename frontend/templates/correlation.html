@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Correlation{% endblock %}
+{% block page_title %}Cross-camera correlation{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-3">Case: <strong>{{ case_id }}</strong> · {{ event_count }} object/face detections analyzed</p>
+
+{% if clusters %}
+<p class="text-muted mb-3">{{ clusters|length }} cluster{{ 's' if clusters|length != 1 else '' }} found — same label detected on different cameras within a 2-second window.</p>
+
+<div class="row">
+    {% for c in clusters %}
+    <div class="col-md-6 mb-3">
+        <div class="metal-card">
+            <div class="metal-badge mb-2">{{ c.label }}</div>
+            <p class="text-muted" style="font-size: 0.85em; margin-bottom: 8px;">Seen on {{ c.sources|length }} camera(s):</p>
+            <ul style="font-size: 0.85em; padding-left: 18px;">
+                {% for source in c.sources %}
+                <li>{{ source }}</li>
+                {% endfor %}
+            </ul>
+            <p class="text-muted" style="font-size: 0.8em; margin-bottom: 0;">
+                Timestamps: {% for t in c.timestamps %}{{ "%.1f"|format(t) }}s{% if not loop.last %}, {% endif %}{% endfor %}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No cross-camera correlations found. This means either there's only one camera's worth of evidence in this case, or no matching labels appeared on different cameras within the time window.</p>
+{% endif %}
+{% endblock %}

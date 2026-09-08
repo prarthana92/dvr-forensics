@@ -5,9 +5,111 @@
 {% block page_subtitle %}Here's the chain of custody at a glance.{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-end gap-2 mb-3">
-    <input type="text" class="form-control case-input" placeholder="Search evidence" style="max-width:220px;">
-    <a href="/upload" class="btn btn-accent"><i class="bi bi-cloud-upload me-1"></i> New acquisition</a>
+<div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+
+    <input
+        type="text"
+        class="form-control case-input"
+        placeholder="Search evidence"
+    >
+
+    <div class="dropdown">
+        <button
+            class="btn case-selector-btn dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+        >
+            <i class="bi bi-folder2-open me-2"></i>
+
+            {% if active_case %}
+                {{ active_case.case_id }}
+            {% else %}
+                Set Case
+            {% endif %}
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end case-dropdown">
+
+            <li class="case-dropdown-header">
+                <span>ACTIVE INVESTIGATION</span>
+            </li>
+
+            {% if cases %}
+
+                {% for case in cases %}
+
+                <li>
+                    <form method="POST" action="/set_case" class="m-0">
+
+                        <input
+                            type="hidden"
+                            name="case_id"
+                            value="{{ case.case_id }}"
+                        >
+
+                        <button
+                            type="submit"
+                            class="dropdown-item case-option"
+                        >
+                            <div class="d-flex align-items-center">
+
+                                <span class="case-status-dot
+                                    {% if active_case and active_case.case_id == case.case_id %}
+                                        active
+                                    {% endif %}
+                                "></span>
+
+                                <div>
+                                    <div class="case-option-id">
+                                        {{ case.case_id }}
+                                    </div>
+
+                                    <div class="case-option-name">
+                                        {{ case.case_name }}
+                                    </div>
+                                </div>
+
+                                {% if active_case and active_case.case_id == case.case_id %}
+                                    <i class="bi bi-check2 ms-auto case-check"></i>
+                                {% endif %}
+
+                            </div>
+                        </button>
+
+                    </form>
+                </li>
+
+                {% endfor %}
+
+            {% else %}
+
+                <li>
+                    <div class="case-empty">
+                        <i class="bi bi-folder-x"></i>
+                        <span>No cases available</span>
+                    </div>
+                </li>
+
+            {% endif %}
+
+            <li><hr class="dropdown-divider"></li>
+
+            <li>
+                <a href="/cases" class="dropdown-item create-case-option">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Manage / Create Case
+                </a>
+            </li>
+
+        </ul>
+    </div>
+
+    <a href="/upload" class="btn btn-accent">
+        <i class="bi bi-cloud-upload me-1"></i>
+        New acquisition
+    </a>
+
 </div>
 
 <div class="row g-3 mb-4">
@@ -150,6 +252,7 @@
             <div class="modal-header"><h5 class="modal-title">Evidence Handling Check</h5></div>
             <div class="modal-body"><p>Have you already made a backup copy of this footage/data elsewhere?</p></div>
             <form method="POST" action="/confirm_copy">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-footer">
                     <button type="submit" name="already_copied" value="yes" class="btn btn-success">Yes, already copied</button>
                     <button type="submit" name="already_copied" value="no" class="btn btn-warning">No, copy it now</button>

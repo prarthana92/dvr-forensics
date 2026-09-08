@@ -3,6 +3,7 @@
 <div class="card">
     <h2>New Case</h2>
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="case_id">Case ID</label>
             <input type="text" id="case_id" name="case_id" value="{{ form_data.case_id }}">

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Timeline{% endblock %}
+{% block page_title %}Event timeline{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-3">Case: <strong>{{ case_id }}</strong> · {{ events|length }} event{{ 's' if events|length != 1 else '' }}, chronological order</p>
+
+{% if events|length == 0 %}
+<div class="alert alert-secondary">No object, face, or anomaly events found for this case yet.</div>
+{% else %}
+<div class="metal-card">
+    {% for e in events %}
+    <div class="activity-item">
+        <div class="activity-dot {% if e.detection_type == 'anomaly' %}dot-red{% elif e.detection_type == 'face' %}dot-blue{% else %}dot-purple{% endif %}"></div>
+        <div>
+            <div class="activity-title">
+                {{ "%.2f"|format(e.timestamp_seconds or 0) }}s —
+                {% if e.detection_type == 'anomaly' %}
+                <span class="status-badge status-mismatch">{{ e.label }}</span>
+                {% elif e.detection_type == 'face' %}
+                <span class="status-badge" style="background: rgba(56,189,248,0.15); color:#38BDF8;">Face detected</span>
+                {% else %}
+                <span class="status-badge status-verified">{{ e.label }}</span>
+                {% endif %}
+                {% if e.confidence %}<span class="text-muted">({{ '%.0f'|format(e.confidence*100) }}%)</span>{% endif %}
+            </div>
+            <div class="activity-file">{{ e.filename }} · frame {{ e.frame_number }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

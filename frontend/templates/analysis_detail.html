@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}TraceX — Analysis Detail{% endblock %}
+{% block page_title %}Analysis — {{ evidence.filename }}{% endblock %}
+
+{% block content %}
+<a href="/analysis" class="btn btn-sm btn-outline-secondary mb-3"><i class="bi bi-arrow-left"></i> Back to Analysis</a>
+
+<p class="text-muted">{{ total_count }} total detection(s) across this file's evidence.</p>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
+            <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-object" type="button"><i class="bi bi-box me-2"></i>Objects ({{ by_type.object|length }})</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-face" type="button"><i class="bi bi-person-bounding-box me-2"></i>Faces ({{ by_type.face|length }})</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-motion" type="button"><i class="bi bi-activity me-2"></i>Motion ({{ by_type.motion|length }})</button>
+            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-anomaly" type="button"><i class="bi bi-exclamation-triangle me-2"></i>Anomalies ({{ by_type.anomaly|length }})</button>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+
+            <div class="tab-pane fade show active" id="tab-object">
+                <h5>Object Detections</h5>
+                {% if by_type.object|length == 0 %}
+                    <p class="text-muted">No object detections.</p>
+                {% else %}
+                    <table class="table custom-table">
+                        <thead><tr><th>Frame</th><th>Time</th><th>Label</th><th>Confidence</th></tr></thead>
+                        <tbody>
+                        {% for d in by_type.object %}
+                            <tr>
+                                <td>{{ d.frame_number }}</td>
+                                <td>{{ d.timestamp_seconds }}s</td>
+                                <td><span class="status-badge status-verified">{{ d.label }}</span></td>
+                                <td>{{ '%.0f'|format(d.confidence*100) }}%</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+
+            <div class="tab-pane fade" id="tab-face">
+                <h5>Face Detections</h5>
+                {% if by_type.face|length == 0 %}
+                    <p class="text-muted">No face detections.</p>
+                {% else %}
+                    <table class="table custom-table">
+                        <thead><tr><th>Frame</th><th>Time</th><th>Confidence</th></tr></thead>
+                        <tbody>
+                        {% for d in by_type.face %}
+                            <tr>
+                                <td>{{ d.frame_number }}</td>
+                                <td>{{ d.timestamp_seconds }}s</td>
+                                <td><span class="status-badge" style="background: rgba(56,189,248,0.15); color:#38BDF8;">{{ '%.0f'|format(d.confidence*100) }}%</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+
+            <div class="tab-pane fade" id="tab-motion">
+                <h5>Motion Events</h5>
+                {% if by_type.motion|length == 0 %}
+                    <p class="text-muted">No motion events.</p>
+                {% else %}
+                    <table class="table custom-table">
+                        <thead><tr><th>Frame</th><th>Time</th><th>Regions</th></tr></thead>
+                        <tbody>
+                        {% for d in by_type.motion %}
+                            <tr>
+                                <td>{{ d.frame_number }}</td>
+                                <td>{{ d.timestamp_seconds }}s</td>
+                                <td><span class="status-badge status-pending">{{ d.region_count }} region(s)</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+
+            <div class="tab-pane fade" id="tab-anomaly">
+                <h5>Anomalies</h5>
+                {% if by_type.anomaly|length == 0 %}
+                    <p class="text-muted">No anomalies detected.</p>
+                {% else %}
+                    <table class="table custom-table">
+                        <thead><tr><th>Frame</th><th>Time</th><th>Type</th></tr></thead>
+                        <tbody>
+                        {% for d in by_type.anomaly %}
+                            <tr>
+                                <td>{{ d.frame_number }}</td>
+                                <td>{{ d.timestamp_seconds }}s</td>
+                                <td><span class="status-badge status-mismatch"><i class="bi bi-exclamation-triangle"></i> {{ d.label }}</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

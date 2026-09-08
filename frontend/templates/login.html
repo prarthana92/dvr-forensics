@@ -22,6 +22,7 @@
             {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="metal-label d-block mb-1">Username</label>
                 <input type="text" name="username" class="form-control mb-3" placeholder="investigator" required>
 

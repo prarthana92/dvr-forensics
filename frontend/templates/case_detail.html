@@ -11,9 +11,11 @@
         <span class="status-badge status-{{ 'verified' if case.status == 'completed' else 'pending' }}">
             {{ case.status.replace('_', ' ')|capitalize }}
         </span>
-        <small class="text-muted ms-2">Created: {{ case.created_at }}</small>
+                <small class="text-muted ms-2">Created: {{ case.created_at }}</small>
     </p>
 </div>
+
+<a href="/correlation/{{ case.case_id }}" class="btn btn-sm btn-accent mb-4">Run cross-camera correlation</a>
 
 <h6 class="mb-3">Evidence in this case ({{ logs|length }})</h6>
 

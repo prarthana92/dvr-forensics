@@ -3,69 +3,91 @@
 {% block page_title %}Analysis{% endblock %}
 
 {% block content %}
-<p class="text-muted">Deeper evidence analysis — metadata, extracted frames, AI detection results, and recovered footage will appear here as backend and AI modules are integrated.</p>
+<p class="text-muted">Case-wide AI detection summary across all evidence. Click any file to see its full detection breakdown.</p>
 
-<div class="row">
+<div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
-            <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-metadata" type="button"><i class="bi bi-file-earmark-text me-2"></i>Metadata</button>
-            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-frames" type="button"><i class="bi bi-images me-2"></i>Frame Viewer</button>
-            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button"><i class="bi bi-cpu me-2"></i>AI Results</button>
-            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-recovery" type="button"><i class="bi bi-arrow-counterclockwise me-2"></i>Recovery</button>
+        <div class="stat-card stat-purple">
+            <div class="stat-icon stat-icon-purple"><i class="bi bi-cpu"></i></div>
+            <div class="stat-number">{{ total_detections }}</div>
+            <div class="stat-label">Total Detections</div>
         </div>
     </div>
-
-    <div class="col-md-9">
-        <div class="tab-content">
-            <div class="tab-pane fade show active" id="tab-metadata">
-                <h5>Metadata</h5>
-                <p class="text-muted">Will display file format, duration, resolution, codec, and frame rate, extracted via FFprobe by the backend metadata module.</p>
-                <span class="badge bg-secondary">Coming soon — pending backend integration</span>
-            </div>
-
-            <div class="tab-pane fade" id="tab-frames">
-                <h5>Frame Viewer</h5>
-                <p class="text-muted">Will show frames extracted from evidence video, each linked to its exact timestamp in the original footage.</p>
-                <span class="badge bg-secondary">Coming soon — pending backend integration</span>
-            </div>
-
-                        <div class="tab-pane fade" id="tab-ai">
-                <h5>AI Results</h5>
-                {% if ai_results and ai_results.events %}
-                    <p class="text-muted">Showing {{ ai_results.events|length }} detected event(s) from the AI team's latest pipeline run.</p>
-                    <table class="table custom-table">
-                        <thead><tr><th>Frame</th><th>Time</th><th>Type</th><th>Label</th><th>Confidence</th></tr></thead>
-                        <tbody>
-                        {% for event in ai_results.events %}
-                            {% for d in event.detections %}
-                            <tr>
-                                <td>{{ event.frame }}</td>
-                                <td>{{ event.timestamp_seconds }}s</td>
-                                <td>
-                                    {% if d.type == 'motion' %}<span class="status-badge status-pending">Motion</span>
-                                    {% elif d.type == 'object' %}<span class="status-badge status-verified">Object</span>
-                                    {% elif d.type == 'face' %}<span class="status-badge" style="background: rgba(56,189,248,0.15); color:#38BDF8;">Face</span>
-                                    {% elif d.type == 'anomaly' %}<span class="status-badge status-mismatch">Anomaly</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ d.label }}</td>
-                                <td>{{ '%.0f'|format(d.confidence*100) + '%' if d.confidence is defined else '—' }}</td>
-                            </tr>
-                            {% endfor %}
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p class="text-muted">No AI results found yet. Run the AI pipeline (<code>python pipeline.py</code> in the <code>ai/</code> folder) to generate <code>ai_results.json</code>.</p>
-                    <span class="badge bg-secondary">Waiting for pipeline output</span>
-                {% endif %}
-            </div>
-            <div class="tab-pane fade" id="tab-recovery">
-                <h5>Recovery</h5>
-                <p class="text-muted">Will show recovered or previously deleted footage segments, once the recovery (carving) module is built.</p>
-                <span class="badge bg-secondary">Coming soon — not yet started</span>
-            </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-green">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-box"></i></div>
+            <div class="stat-number">{{ type_totals.get('object', 0) }}</div>
+            <div class="stat-label">Objects</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-person-bounding-box"></i></div>
+            <div class="stat-number">{{ type_totals.get('face', 0) }}</div>
+            <div class="stat-label">Faces</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card stat-red">
+            <div class="stat-icon stat-icon-red"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="stat-number">{{ type_totals.get('anomaly', 0) }}</div>
+            <div class="stat-label">Anomalies</div>
         </div>
     </div>
 </div>
+
+<h6 class="mb-3">Evidence Breakdown</h6>
+
+{% if evidence_summaries|length == 0 %}
+    <div class="alert alert-secondary">No evidence uploaded yet.</div>
+{% endif %}
+
+<table class="table custom-table">
+    <thead>
+        <tr>
+            <th>File</th>
+            <th>AI Status</th>
+            <th>Objects</th>
+            <th>Faces</th>
+            <th>Motion Events</th>
+            <th>Anomalies</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in evidence_summaries %}
+        <tr>
+            <td>{{ e.filename }}</td>
+            <td>
+                {% if e.ai_status == 'completed' %}
+                    <span class="status-badge status-verified"><i class="bi bi-check-circle"></i> Completed</span>
+                {% elif e.ai_status == 'processing' %}
+                    <span class="status-badge status-pending"><i class="bi bi-hourglass-split"></i> Analyzing…</span>
+                {% elif e.ai_status == 'failed' %}
+                    <span class="status-badge status-mismatch"><i class="bi bi-x-circle"></i> Failed</span>
+                {% else %}
+                    <span class="status-badge status-pending"><i class="bi bi-dash-circle"></i> Pending</span>
+                {% endif %}
+            </td>
+            <td>{{ e.object_count }}</td>
+            <td>{{ e.face_count }}</td>
+            <td>{{ e.motion_count }}</td>
+            <td>
+                {% if e.anomaly_count > 0 %}
+                    <span class="status-badge status-mismatch">{{ e.anomaly_count }}</span>
+                {% else %}
+                    0
+                {% endif %}
+            </td>
+            <td>
+                {% if e.ai_status == 'completed' %}
+                    <a href="/analysis/{{ e.hash_log_id }}" class="btn btn-sm btn-outline-info">View Details</a>
+                {% else %}
+                    <span class="text-muted" style="font-size:0.85em;">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}
