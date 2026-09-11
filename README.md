@@ -54,12 +54,12 @@ git push -u origin your-feature-name
 
 | Module | Owner | Status |
 |---|---|---|
-| Acquisition (hashing, evidence backup) | Prarthana | Working prototype |
-| Database (MySQL schema, logging) | Prarthana | Working prototype |
-| Frontend (login, dashboard, evidence, verification) | Prarthana | Working prototype |
-| Hikvision parser | TBD | Not started |
-| Dahua parser + deleted-clip recovery | TBD | Not started |
-| ML analytics (face/object/motion detection) | TBD | Not started |
+| Acquisition (hashing, evidence backup) | Working prototype |
+| Database (MySQL schema, logging)| Working prototype |
+| Frontend (login, dashboard, evidence, verification)| Working prototype |
+| Hikvision parser |  Not started |
+| Dahua parser + deleted-clip recovery |  Not started |
+| ML analytics (face/object/motion detection) | Not started |
 
 ## Running the app
 
