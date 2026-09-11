@@ -57,9 +57,9 @@ git push -u origin your-feature-name
 | Acquisition (hashing, evidence backup) | Working prototype |
 | Database (MySQL schema, logging)| Working prototype |
 | Frontend (login, dashboard, evidence, verification)| Working prototype |
-| Hikvision parser |  Not started |
-| Dahua parser + deleted-clip recovery |  Not started |
-| ML analytics (face/object/motion detection) | Not started |
+| Hikvision parser |  Working prototype |
+| Dahua parser + deleted-clip recovery |  Working prototype  |
+| ML analytics (face/object/motion detection) |Working prototype |
 
 ## Running the app
 
